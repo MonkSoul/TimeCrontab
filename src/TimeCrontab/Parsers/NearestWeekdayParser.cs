@@ -67,7 +67,7 @@ namespace TimeCrontab
              * 另外一点，W 的最近寻找不会跨过月份
              */
 
-            // 如果这个月没有足够的天数则跳过（例如，二月没有与31日最接近的工作日，因为没有二月31日。）
+            // 如果这个月没有足够的天数则跳过（例如，二月没有 30 和 31 日）
             if (DateTime.DaysInMonth(datetime.Year, datetime.Month) < SpecificValue)
             {
                 return false;
