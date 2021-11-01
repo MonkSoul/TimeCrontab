@@ -50,7 +50,7 @@ var crontab = Crontab.Parse("* * * * * * *", CronStringFormat.WithSecondsAndYear
 var nextRunTime = crontab.GetNextOccurrence(DateTime.Now);
 ```
 
-### Cron 字段支持
+### Cron 字段
 
 | 字段 | 允许值          | 允许特别符号   |
 | ---- | --------------- | -------------- |
