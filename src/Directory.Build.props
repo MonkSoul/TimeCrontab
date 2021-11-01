@@ -1,0 +1,26 @@
+﻿<Project>
+	<PropertyGroup>
+		<TargetFramework>net5.0</TargetFramework>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<IncludeSymbols>true</IncludeSymbols>
+		<Authors>百小僧</Authors>
+		<Company>Baiqian Co.,Ltd.</Company>
+		<Product>TimeCrontab</Product>
+		<Copyright>© 2020-2021 百小僧, Baiqian Co.,Ltd.</Copyright>
+		<RepositoryUrl>https://gitee.com/dotnetchina/TimeCrontab</RepositoryUrl>
+		<RepositoryType>Gitee</RepositoryType>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<PackageLicenseExpression>MulanPSL-2.0</PackageLicenseExpression>
+		<PackageProjectUrl>https://gitee.com/dotnetchina/TimeCrontab</PackageProjectUrl>
+		<PackageOutputPath>../nupkgs</PackageOutputPath>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<DocumentationFile>$(MSBuildProjectName).xml</DocumentationFile>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<LangVersion>latest</LangVersion>
+	</PropertyGroup>
+
+</Project>
