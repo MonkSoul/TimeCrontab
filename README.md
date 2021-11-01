@@ -52,15 +52,15 @@ var nextRunTime = crontab.GetNextOccurrence(DateTime.Now);
 
 ### Cron 字段
 
-| 字段 | 允许值          | 允许特别符号   | 格式化                                                                   |
-| ---- | --------------- | -------------- | ------------------------------------------------------------------------ |
-| 秒   | 0-59            | \* , - /       | `CronStringFormat.WithSeconds` 或 `CronStringFormat.WithSecondsAndYears` |
-| 分钟 | 0-59            | \* , - /       | `ALL`                                                                    |
-| 小时 | 0-23            | \* , - /       | `ALL`                                                                    |
-| 天   | 1-31            | \* , - / ? L W | `ALL`                                                                    |
-| 月份 | 1-12 or JAN-DEC | \* , - /       | `ALL`                                                                    |
-| 星期 | 0-6 or SUN-SAT  | \* , - / ? L # | `ALL`                                                                    |
-| 年份 | 0001–9999       | \* , - /       | `CronStringFormat.WithYears` 或 `CronStringFormat.WithSecondsAndYears`   |
+| 字段 | 允许值              | 允许特别符号     | 格式化                                                                   |
+| ---- | ------------------- | ---------------- | ------------------------------------------------------------------------ |
+| 秒   | `0-59`              | `\* , - /`       | `CronStringFormat.WithSeconds` 或 `CronStringFormat.WithSecondsAndYears` |
+| 分钟 | `0-59`              | `\* , - /`       | `ALL`                                                                    |
+| 小时 | `0-23`              | `\* , - /`       | `ALL`                                                                    |
+| 天   | `1-31`              | `\* , - / ? L W` | `ALL`                                                                    |
+| 月份 | `1-12` or `JAN-DEC` | `\* , - /`       | `ALL`                                                                    |
+| 星期 | `0-6` or `SUN-SAT`  | `\* , - / ? L #` | `ALL`                                                                    |
+| 年份 | `0001–9999`         | `\* , - /`       | `CronStringFormat.WithYears` 或 `CronStringFormat.WithSecondsAndYears`   |
 
 [更多文档](./docs)
 
