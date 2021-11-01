@@ -4,6 +4,9 @@
 
 .NET 全能 Cron 表达式解析库，支持 Cron 完整特性。
 
+![TimeCrontab.drawio](https://gitee.com/dotnetchina/TimeCrontab/raw/master/drawio/TimeCrontab.drawio.png "TimeCrontab.drawio.png")
+
+
 ## 特性
 
 - 支持 Cron 完整特性
