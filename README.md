@@ -19,10 +19,10 @@
 - [Package Manager](https://www.nuget.org/packages/TimeCrontab)
 
 ```powershell
-Install-Package Jaina
+Install-Package TimeCrontab
 ```
 
-- [.NET CLI](https://www.nuget.org/packages/Jaina)
+- [.NET CLI](https://www.nuget.org/packages/TimeCrontab)
 
 ```powershell
 dotnet add package TimeCrontab
