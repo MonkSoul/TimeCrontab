@@ -16,7 +16,7 @@ namespace TimeCrontab
     /// Cron 表达式抽象类
     /// </summary>
     /// <remarks>主要将 Cron 表达式转换成 OOP 类进行操作</remarks>
-    public partial class Crontab
+    public sealed partial class Crontab
     {
         /// <summary>
         /// 解析 Cron 表达式字段并存储其 所有发生值 字符解析器

@@ -1,3 +1,4 @@
+using System;
 using Xunit;
 
 namespace TimeCrontab.UnitTests
@@ -18,10 +19,21 @@ namespace TimeCrontab.UnitTests
         [InlineData("0 30 10-13 ? * WED,FRI", "0 30 10-13 ? * 3,5", CronStringFormat.WithSeconds)]
         [InlineData("0 */5 * * * *", "0 */5 * * * *", CronStringFormat.WithSeconds)]
         [InlineData("0 0/1 * * * ?", "0 */1 * * * ?", CronStringFormat.WithSeconds)]
+        [InlineData("5-10 30-35 10-12 * * *", "5-10 30-35 10-12 * * *", CronStringFormat.WithSeconds)]
         public void TestParse(string expression, string outputString, CronStringFormat format)
         {
             var output = Crontab.Parse(expression, format).ToString();
             Assert.Equal(outputString, output);
+        }
+
+        [Theory]
+        [InlineData("* * * * *", "2021-01-01 00:01:00", CronStringFormat.Default)]
+        public void TestGetNextOccurence(string expression, string nextOccurenceString, CronStringFormat format)
+        {
+            var beginTime = new DateTime(2021, 1, 1, 0, 0, 0);
+            var crontab = Crontab.Parse(expression, format);
+            var nextOccurence = crontab.GetNextOccurrence(beginTime);
+            Assert.Equal(nextOccurenceString, nextOccurence.ToString("yyyy-MM-dd HH:mm:ss"));
         }
     }
 }
