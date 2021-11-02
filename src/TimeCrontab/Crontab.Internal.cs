@@ -606,7 +606,7 @@ namespace TimeCrontab
         }
 
         /// <summary>
-        /// 获取下一个发生时间
+        /// 处理下一个发生时间边界值
         /// </summary>
         /// <remarks>如果发生时间大于终止时间，则返回终止时间，否则返回发生时间</remarks>
         /// <param name="newTime">下一个发生时间</param>
