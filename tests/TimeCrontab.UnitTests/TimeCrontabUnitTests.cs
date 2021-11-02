@@ -28,6 +28,19 @@ namespace TimeCrontab.UnitTests
 
         [Theory]
         [InlineData("* * * * *", "2021-01-01 00:01:00", CronStringFormat.Default)]
+        [InlineData("0 0 31W * *", "2021-01-29 00:00:00", CronStringFormat.Default)]
+        [InlineData("0 23 ? * MON-FRI", "2021-01-01 23:00:00", CronStringFormat.Default)]
+        [InlineData("*/5 * * * *", "2021-01-01 00:05:00", CronStringFormat.Default)]
+        [InlineData("30 11 * * 1-5", "2021-01-01 11:30:00", CronStringFormat.Default)]
+        [InlineData("23 12 * JAN *", "2021-01-01 12:23:00", CronStringFormat.Default)]
+        [InlineData("* * * * MON#3", "2021-01-18 00:00:00", CronStringFormat.Default)]
+        [InlineData("*/5 * L JAN *", "2021-01-31 00:00:00", CronStringFormat.Default)]
+        [InlineData("0 0 ? 1 MON#1", "2021-01-04 00:00:00", CronStringFormat.Default)]
+        [InlineData("0 0 LW * *", "2021-01-29 00:00:00", CronStringFormat.Default)]
+        [InlineData("0 30 10-13 ? * WED,FRI", "2021-01-01 10:30:00", CronStringFormat.WithSeconds)]
+        [InlineData("0 */5 * * * *", "2021-01-01 00:05:00", CronStringFormat.WithSeconds)]
+        [InlineData("0 0/1 * * * ?", "2021-01-01 00:01:00", CronStringFormat.WithSeconds)]
+        [InlineData("5-10 30-35 10-12 * * *", "2021-01-01 10:30:05", CronStringFormat.WithSeconds)]
         public void TestGetNextOccurence(string expression, string nextOccurenceString, CronStringFormat format)
         {
             var beginTime = new DateTime(2021, 1, 1, 0, 0, 0);
