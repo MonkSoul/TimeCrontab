@@ -62,7 +62,7 @@ var crontab = Crontab.Parse("* * * * * * *", CronStringFormat.WithSecondsAndYear
 var nextOccurrence = crontab.GetNextOccurrence(DateTime.Now);
 ```
 
-**Macro标识符**
+**Macro 标识符**
 
 ```cs
 var secondly = Crontab.Secondly;    // 每秒
