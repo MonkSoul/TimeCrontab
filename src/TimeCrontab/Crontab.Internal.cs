@@ -87,7 +87,7 @@ namespace TimeCrontab
         private static List<ICronParser> ParseField(string field, CrontabFieldKind kind)
         {
             /*
-             * 在 Cron 表达式中，单个字段域值也支持定义多个值（我们成为值中值），如 1,2,3 或 SUN,FRI,SAT
+             * 在 Cron 表达式中，单个字段域值也支持定义多个值（我们称为值中值），如 1,2,3 或 SUN,FRI,SAT
              * 所以，这里需要将字段域值通过 , 进行切割后独立处理
              */
 
