@@ -15,6 +15,9 @@ namespace TimeCrontab.UnitTests
         [InlineData("*/5 * L JAN *", "*/5 * L 1 *", CronStringFormat.Default)]
         [InlineData("0 0 ? 1 MON#1", "0 0 ? 1 1#1", CronStringFormat.Default)]
         [InlineData("0 0 LW * *", "0 0 LW * *", CronStringFormat.Default)]
+        [InlineData("0 30 10-13 ? * WED,FRI", "0 30 10-13 ? * 3,5", CronStringFormat.WithSeconds)]
+        [InlineData("0 */5 * * * *", "0 */5 * * * *", CronStringFormat.WithSeconds)]
+        [InlineData("0 0/1 * * * ?", "0 */1 * * * ?", CronStringFormat.WithSeconds)]
         public void TestParse(string expression, string outputString, CronStringFormat format)
         {
             var output = Crontab.Parse(expression, format).ToString();
