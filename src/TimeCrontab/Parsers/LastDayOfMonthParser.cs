@@ -8,54 +8,53 @@
 
 using System;
 
-namespace TimeCrontab
+namespace TimeCrontab;
+
+/// <summary>
+/// Cron 字段值含 L 字符解析器
+/// </summary>
+/// <remarks>
+/// <para>L 表示月中最后一天，仅在 <see cref="CrontabFieldKind.Day"/> 字段域中使用</para>
+/// </remarks>
+internal sealed class LastDayOfMonthParser : ICronParser
 {
     /// <summary>
-    /// Cron 字段值含 L 字符解析器
+    /// 构造函数
     /// </summary>
-    /// <remarks>
-    /// <para>L 表示月中最后一天，仅在 <see cref="CrontabFieldKind.Day"/> 字段域中使用</para>
-    /// </remarks>
-    internal sealed class LastDayOfMonthParser : ICronParser
+    /// <param name="kind">Cron 字段种类</param>
+    /// <exception cref="TimeCrontabException"></exception>
+    public LastDayOfMonthParser(CrontabFieldKind kind)
     {
-        /// <summary>
-        /// 构造函数
-        /// </summary>
-        /// <param name="kind">Cron 字段种类</param>
-        /// <exception cref="TimeCrontabException"></exception>
-        public LastDayOfMonthParser(CrontabFieldKind kind)
+        // 验证 L 字符是否在 Day 字段域中使用
+        if (kind != CrontabFieldKind.Day)
         {
-            // 验证 L 字符是否在 Day 字段域中使用
-            if (kind != CrontabFieldKind.Day)
-            {
-                throw new TimeCrontabException("The <L> parser can only be used with the Day field.");
-            }
-
-            Kind = kind;
+            throw new TimeCrontabException("The <L> parser can only be used with the Day field.");
         }
 
-        /// <summary>
-        /// Cron 字段种类
-        /// </summary>
-        public CrontabFieldKind Kind { get; }
+        Kind = kind;
+    }
 
-        /// <summary>
-        /// 判断当前时间是否符合 Cron 字段种类解析规则
-        /// </summary>
-        /// <param name="datetime">当前时间</param>
-        /// <returns><see cref="bool"/></returns>
-        public bool IsMatch(DateTime datetime)
-        {
-            return DateTime.DaysInMonth(datetime.Year, datetime.Month) == datetime.Day;
-        }
+    /// <summary>
+    /// Cron 字段种类
+    /// </summary>
+    public CrontabFieldKind Kind { get; }
 
-        /// <summary>
-        /// 将解析器转换成字符串输出
-        /// </summary>
-        /// <returns><see cref="string"/></returns>
-        public override string ToString()
-        {
-            return "L";
-        }
+    /// <summary>
+    /// 判断当前时间是否符合 Cron 字段种类解析规则
+    /// </summary>
+    /// <param name="datetime">当前时间</param>
+    /// <returns><see cref="bool"/></returns>
+    public bool IsMatch(DateTime datetime)
+    {
+        return DateTime.DaysInMonth(datetime.Year, datetime.Month) == datetime.Day;
+    }
+
+    /// <summary>
+    /// 将解析器转换成字符串输出
+    /// </summary>
+    /// <returns><see cref="string"/></returns>
+    public override string ToString()
+    {
+        return "L";
     }
 }

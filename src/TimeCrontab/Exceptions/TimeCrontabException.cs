@@ -8,38 +8,37 @@
 
 using System;
 
-namespace TimeCrontab
+namespace TimeCrontab;
+
+/// <summary>
+/// TimeCrontab 模块异常类
+/// </summary>
+public sealed class TimeCrontabException : Exception
 {
     /// <summary>
-    /// TimeCrontab 模块异常类
+    /// 构造函数
     /// </summary>
-    public sealed class TimeCrontabException : Exception
+    public TimeCrontabException()
+        : base()
     {
-        /// <summary>
-        /// 构造函数
-        /// </summary>
-        public TimeCrontabException()
-            : base()
-        {
-        }
+    }
 
-        /// <summary>
-        /// 构造函数
-        /// </summary>
-        /// <param name="message">异常消息</param>
-        public TimeCrontabException(string message)
-            : base(message)
-        {
-        }
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="message">异常消息</param>
+    public TimeCrontabException(string message)
+        : base(message)
+    {
+    }
 
-        /// <summary>
-        /// 构造函数
-        /// </summary>
-        /// <param name="message">异常消息</param>
-        /// <param name="innerException">内部异常</param>
-        public TimeCrontabException(string message, Exception innerException)
-            : base(message, innerException)
-        {
-        }
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="message">异常消息</param>
+    /// <param name="innerException">内部异常</param>
+    public TimeCrontabException(string message, Exception innerException)
+        : base(message, innerException)
+    {
     }
 }
