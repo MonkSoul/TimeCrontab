@@ -121,13 +121,13 @@ public sealed partial class Crontab
             if (newParser.StartsWith("*", StringComparison.OrdinalIgnoreCase))
             {
                 // 继续往后解析
-                newParser = newParser[1..];
+                newParser = newParser.Substring(1);
 
                 // 判断是否以 / 字符开头，如果是，则该值为带步长的 Cron 值
                 if (newParser.StartsWith("/", StringComparison.OrdinalIgnoreCase))
                 {
                     // 继续往后解析
-                    newParser = newParser[1..];
+                    newParser = newParser.Substring(1);
 
                     // 解析 Cron 值步长并创建 StepParser 解析器
                     var steps = GetValue(ref newParser, kind);
@@ -142,7 +142,7 @@ public sealed partial class Crontab
             if (newParser.StartsWith("L") && kind == CrontabFieldKind.Day)
             {
                 // 继续往后解析
-                newParser = newParser[1..];
+                newParser = newParser.Substring(1);
 
                 // 是否是 LW 字符，如果是，创建 LastWeekdayOfMonthParser 解析器
                 if (newParser == "W")
@@ -192,7 +192,7 @@ public sealed partial class Crontab
                 case '/':
                     {
                         // 继续往后解析
-                        newParser = newParser[1..];
+                        newParser = newParser.Substring(1);
 
                         // 解析 Cron 值步长并创建 StepParser 解析器
                         var steps = GetValue(ref newParser, kind);
@@ -202,7 +202,7 @@ public sealed partial class Crontab
                 case '-':
                     {
                         // 继续往后解析
-                        newParser = newParser[1..];
+                        newParser = newParser.Substring(1);
 
                         // 获取范围结束值
                         var endValue = GetValue(ref newParser, kind);
@@ -211,7 +211,7 @@ public sealed partial class Crontab
                         // 继续推进解析，判断是否以 / 开头，如果是，则获取步长
                         if (newParser.StartsWith("/"))
                         {
-                            newParser = newParser[1..];
+                            newParser = newParser.Substring(1);
                             steps = GetValue(ref newParser, kind);
                         }
 
@@ -222,7 +222,7 @@ public sealed partial class Crontab
                 case '#':
                     {
                         // 继续往后解析
-                        newParser = newParser[1..];
+                        newParser = newParser.Substring(1);
 
                         // 获取第几个
                         var weekNumber = GetValue(ref newParser, kind);
@@ -294,13 +294,13 @@ public sealed partial class Crontab
         var maximum = Constants.MaximumDateTimeValues[kind];
 
         // 前面连贯类型的值
-        var valueToParse = parser[..offset];
+        var valueToParse = parser.Substring(0, offset);
 
         // 处理数字开头的连贯类型值
         if (int.TryParse(valueToParse, out var value))
         {
             // 导出下一轮待解析的值（依旧采用推进式）
-            parser = parser[offset..];
+            parser = parser.Substring(offset);
 
             var returnValue = value;
 
@@ -341,7 +341,7 @@ public sealed partial class Crontab
                 {
                     missingParser = "L";
                 }
-                parser = parser[offset..] + missingParser;
+                parser = parser.Substring(offset) + missingParser;
 
                 // 转换成 int 值返回（SUN，JAN.....）
                 var returnValue = replaceVal.First().Value;
