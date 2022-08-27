@@ -75,6 +75,13 @@ var weekly = Crontab.Weekly;    // 每周日 00：00：00
 var yearly = Crontab.Yearly;    // 每年 1 月 1 号 00:00:00
 ```
 
+**获取休眠时间差**
+
+```cs
+var crontab = Crontab.Parse("* * * * * *", CronStringFormat.WithYears);
+var sleepMilliseconds = crontab.GetSleepMilliseconds(DateTime.Now);
+```
+
 [更多文档](./docs)
 
 ## 文档

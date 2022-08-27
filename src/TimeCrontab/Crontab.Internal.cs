@@ -28,7 +28,7 @@ public sealed partial class Crontab
     private static Dictionary<CrontabFieldKind, List<ICronParser>> ParseToDictionary(string expression, CronStringFormat format)
     {
         // Cron 表达式空检查
-        if (string.IsNullOrWhiteSpace(expression))
+        if (string.IsNullOrEmpty(expression))
         {
             throw new TimeCrontabException("The provided cron string is null, empty or contains only whitespace.");
         }
