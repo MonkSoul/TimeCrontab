@@ -67,7 +67,12 @@ var nextOccurrence = crontab.GetNextOccurrence(DateTime.Now);
 
 ```cs
 var crontab = Crontab.Parse("* * * * * *", CronStringFormat.WithYears);
-var sleepMilliseconds = crontab.GetSleepMilliseconds(DateTime.UtcNow);
+
+while(true)
+{
+    Thread.Sleep(crontab.GetSleepMilliseconds(DateTime.UtcNow));
+    Console.WriteLine(DateTime.Now.ToString("G"));
+}
 ```
 
 **Macro 标识符**
