@@ -63,6 +63,13 @@ var crontab = Crontab.Parse("* * * * * * *", CronStringFormat.WithSecondsAndYear
 var nextOccurrence = crontab.GetNextOccurrence(DateTime.Now);
 ```
 
+**获取休眠时间差**
+
+```cs
+var crontab = Crontab.Parse("* * * * * *", CronStringFormat.WithYears);
+var sleepMilliseconds = crontab.GetSleepMilliseconds(DateTime.UtcNow);
+```
+
 **Macro 标识符**
 
 ```cs
@@ -73,13 +80,6 @@ var daily = Crontab.Daily;  // 每天 00:00:00
 var monthly = Crontab.Monthly;  // 每月 1 号 00:00:00
 var weekly = Crontab.Weekly;    // 每周日 00：00：00
 var yearly = Crontab.Yearly;    // 每年 1 月 1 号 00:00:00
-```
-
-**获取休眠时间差**
-
-```cs
-var crontab = Crontab.Parse("* * * * * *", CronStringFormat.WithYears);
-var sleepMilliseconds = crontab.GetSleepMilliseconds(DateTime.Now);
 ```
 
 [更多文档](./docs)
