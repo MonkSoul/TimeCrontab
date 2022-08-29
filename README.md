@@ -63,7 +63,7 @@ var crontab = Crontab.Parse("* * * * * * *", CronStringFormat.WithSecondsAndYear
 var nextOccurrence = crontab.GetNextOccurrence(DateTime.Now);
 ```
 
-**获取休眠时间差**
+**获取休眠差实现定时任务**
 
 ```cs
 // 阻塞方式
