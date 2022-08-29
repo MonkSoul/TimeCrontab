@@ -66,7 +66,7 @@ var nextOccurrence = crontab.GetNextOccurrence(DateTime.Now);
 **获取休眠时间差**
 
 ```cs
-var crontab = Crontab.Parse("* * * * * *", CronStringFormat.WithYears);
+var crontab = Crontab.Parse("* * * * * *", CronStringFormat.WithSeconds);
 
 while(true)
 {
