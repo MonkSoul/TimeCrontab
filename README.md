@@ -66,13 +66,24 @@ var nextOccurrence = crontab.GetNextOccurrence(DateTime.Now);
 **获取休眠时间差**
 
 ```cs
+// 阻塞方式
 var crontab = Crontab.Parse("* * * * * *", CronStringFormat.WithSeconds);
-
 while(true)
 {
     Thread.Sleep(crontab.GetSleepMilliseconds(DateTime.UtcNow));
     Console.WriteLine(DateTime.Now.ToString("G"));
 }
+
+// 无阻塞方式
+var crontab = Crontab.Parse("* * * * * *", CronStringFormat.WithSeconds);
+Task.Factory.StartNew(() =>
+{
+    while (true)
+    {
+        Thread.Sleep(crontab.GetSleepMilliseconds(DateTime.UtcNow));
+        Console.WriteLine(DateTime.Now.ToString("G"));
+    }
+}, TaskCreationOptions.LongRunning);
 ```
 
 **Macro 标识符**
