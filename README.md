@@ -2,7 +2,7 @@
 
 [![license](https://img.shields.io/badge/license-MIT-orange?cacheSeconds=10800)](https://gitee.com/dotnetchina/TimeCrontab/blob/master/LICENSE) [![nuget](https://img.shields.io/nuget/v/TimeCrontab.svg?cacheSeconds=10800)](https://www.nuget.org/packages/TimeCrontab) [![dotNET China](https://img.shields.io/badge/organization-dotNET%20China-yellow?cacheSeconds=10800)](https://gitee.com/dotnetchina)
 
-.NET 全能 Cron 表达式解析库，支持 Cron 完整特性。
+.NET 全能 Cron 表达式解析库，支持 Cron 所有特性。
 
 ![TimeCrontab.drawio](https://gitee.com/dotnetchina/TimeCrontab/raw/master/drawio/TimeCrontab.drawio.png "TimeCrontab.drawio.png")
 
@@ -84,6 +84,46 @@ Task.Factory.StartNew(() =>
         Console.WriteLine(DateTime.Now.ToString("G"));
     }
 }, TaskCreationOptions.LongRunning);
+```
+
+**结合 `BackgroundService` 方式**
+
+```cs
+using TimeCrontab;
+
+namespace WorkerService;
+
+public class Worker : BackgroundService
+{
+    private readonly ILogger<Worker> _logger;
+
+    private readonly Crontab _crontab;
+
+    public Worker(ILogger<Worker> logger)
+    {
+        _logger = logger;
+        _crontab = Crontab.Parse("* * * * * *", CronStringFormat.WithSeconds);
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            var taskFactory = new TaskFactory(System.Threading.Tasks.TaskScheduler.Current);
+
+            await taskFactory.StartNew(async () =>
+            {
+                // 你的业务代码写到这里面
+
+                _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
+
+                await Task.CompletedTask;
+            }, stoppingToken);
+
+            await Task.Delay(_crontab.GetSleepMilliseconds(DateTime.UtcNow), stoppingToken);
+        }
+    }
+}
 ```
 
 **Macro 标识符**
