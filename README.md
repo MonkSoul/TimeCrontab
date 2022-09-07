@@ -86,7 +86,7 @@ Task.Factory.StartNew(() =>
 }, TaskCreationOptions.LongRunning);
 ```
 
-**结合 `BackgroundService` 方式**
+**`BackgroundService` 实现定时任务**
 
 ```cs
 using TimeCrontab;
