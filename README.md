@@ -129,6 +129,16 @@ public class Worker : BackgroundService
 **Macro 标识符**
 
 ```cs
+// macro 字符串
+var secondly = Crontab.Parse("@secondly");    // 每秒
+var minutely = Crontab.Parse("@minutely");    // 每分钟
+var hourly = Crontab.Parse("@hourly");    // 每小时
+var daily = Crontab.Parse("@daily");  // 每天 00:00:00
+var monthly = Crontab.Parse("@monthly");  // 每月 1 号 00:00:00
+var weekly = Crontab.Parse("@weekly");    // 每周日 00：00：00
+var yearly = Crontab.Parse("@yearly");    // 每年 1 月 1 号 00:00:00
+
+// 静态属性
 var secondly = Crontab.Secondly;    // 每秒
 var minutely = Crontab.Minutely;    // 每分钟
 var hourly = Crontab.Hourly;    // 每小时
