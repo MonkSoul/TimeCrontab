@@ -70,7 +70,7 @@ var nextOccurrence = crontab.GetNextOccurrence(DateTime.Now);
 var crontab = Crontab.Parse("* * * * * *", CronStringFormat.WithSeconds);
 while(true)
 {
-    Thread.Sleep(crontab.GetSleepMilliseconds(DateTime.UtcNow));
+    Thread.Sleep(crontab.GetSleepMilliseconds(DateTime.Now));
     Console.WriteLine(DateTime.Now.ToString("G"));
 }
 
@@ -80,7 +80,7 @@ Task.Factory.StartNew(async () =>
 {
     while (true)
     {
-        await Task.Delay(crontab.GetSleepMilliseconds(DateTime.UtcNow));
+        await Task.Delay(crontab.GetSleepMilliseconds(DateTime.Now));
         Console.WriteLine(DateTime.Now.ToString("G"));
     }
 }, TaskCreationOptions.LongRunning);
@@ -115,12 +115,12 @@ public class Worker : BackgroundService
             {
                 // 你的业务代码写到这里面
 
-                _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
+                _logger.LogInformation("Worker running at: {time}", DateTime.Now);
 
                 await Task.CompletedTask;
             }, stoppingToken);
 
-            await Task.Delay(_crontab.GetSleepMilliseconds(DateTime.UtcNow), stoppingToken);
+            await Task.Delay(_crontab.GetSleepMilliseconds(DateTime.Now), stoppingToken);
         }
     }
 }
