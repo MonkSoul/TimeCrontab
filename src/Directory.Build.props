@@ -14,6 +14,9 @@
 		<PackageProjectUrl>https://gitee.com/dotnetchina/TimeCrontab</PackageProjectUrl>
 		<PackageTags>Crons;Crontab;TimeCrontab;百小僧;Monk;MonkSoul;ASP.NET;ASP.NET Core;.NET;.NET Core;.NET5;.NET6;Framework;dotNET;dotNET China;Web;Cross Platform</PackageTags>
 		<PackageOutputPath>../nupkgs</PackageOutputPath>
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+		<EmbedUntrackedSource>true</EmbedUntrackedSource>
+		<EmbedAllSources>true</EmbedAllSources>
 	</PropertyGroup>
 
 	<PropertyGroup>
