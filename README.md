@@ -148,11 +148,11 @@ var weekly = Crontab.Weekly;    // 每周日 00：00：00
 var yearly = Crontab.Yearly;    // 每年 1 月 1 号 00:00:00
 ```
 
-[更多文档](./docs)
+[更多文档](https://furion.baiqian.ltd/docs/cron)
 
 ## 文档
 
-您可以在[主页](./docs)找到 TimeCrontab 文档。
+您可以在[主页](https://furion.baiqian.ltd/docs/cron)找到 TimeCrontab 文档。
 
 ## 测试
 
