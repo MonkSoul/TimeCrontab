@@ -137,6 +137,7 @@ var daily = Crontab.Parse("@daily");  // 每天 00:00:00
 var monthly = Crontab.Parse("@monthly");  // 每月 1 号 00:00:00
 var weekly = Crontab.Parse("@weekly");    // 每周日 00：00：00
 var yearly = Crontab.Parse("@yearly");    // 每年 1 月 1 号 00:00:00
+var workday = Crontab.Parse("@workday");    // 每周一至周五 00:00:00
 
 // 静态属性
 var secondly = Crontab.Secondly;    // 每秒
@@ -146,6 +147,55 @@ var daily = Crontab.Daily;  // 每天 00:00:00
 var monthly = Crontab.Monthly;  // 每月 1 号 00:00:00
 var weekly = Crontab.Weekly;    // 每周日 00：00：00
 var yearly = Crontab.Yearly;    // 每年 1 月 1 号 00:00:00
+var workday = Crontab.Workday;    // 每周一至周五 00:00:00
+```
+
+**Macro At 标识符**
+
+```cs
+// 每第 3 秒
+var crontab = Crontab.SecondlyAt(3);
+// 每第 3，5，6 秒
+var crontab = Crontab.SecondlyAt(3, 5, 6);
+
+// 每分钟第 3 秒
+var crontab = Crontab.MinutelyAt(3);
+// 每分钟第 3，5，6 秒
+var crontab = Crontab.MinutelyAt(3, 5, 6);
+
+// 每小时第 3 分钟
+var crontab = Crontab.HourlyAt(3);
+// 每小时第 3，5，6 分钟
+var crontab = Crontab.HourlyAt(3, 5, 6);
+
+// 每天第 3 小时正（点）
+var crontab = Crontab.DailyAt(3);
+// 每天第 3，5，6 小时正（点）
+var crontab = Crontab.DailyAt(3, 5, 6);
+
+// 每月第 3 天零点正
+var crontab = Crontab.MonthlyAt(3);
+// 每月第 3，5，6 天零点正
+var crontab = Crontab.MonthlyAt(3, 5, 6);
+
+// 每周星期 3 零点正
+var crontab = Crontab.WeeklyAt(3);
+var crontab = Crontab.WeeklyAt("WED");  // SUN（星期天），MON，TUE，WED，THU，FRI，SAT
+// 每周星期 3，5，6 零点正
+var crontab = Crontab.WeeklyAt(3, 5, 6);
+var crontab = Crontab.WeeklyAt("WED", "FRI", "SAT");
+// 还支持混合
+var crontab = Crontab.WeeklyAt(3, "FRI", 6);
+
+// 每年第 3 月 1 日零点正
+var crontab = Crontab.YearlyAt(3);
+var crontab = Crontab.YearlyAt("MAR");  // JAN（一月），FEB，MAR，APR，MAY，JUN，JUL，AUG，SEP，OCT，NOV，DEC
+// 每年第 3，5，6 月 1 日零点正
+var crontab = Crontab.YearlyAt(3);
+var crontab = Crontab.YearlyAt(3, 5, 6);
+var crontab = Crontab.YearlyAt("MAR", "MAY", "JUN");
+// 还支持混合
+var crontab = Crontab.YearlyAt(3, "MAY", 6);
 ```
 
 [更多文档](https://furion.baiqian.ltd/docs/cron)

@@ -73,6 +73,9 @@ public sealed partial class Crontab
                 case "@yearly":
                     return Yearly;
 
+                case "@workday":
+                    return Workday;
+
                 default:
                     break;
             }
