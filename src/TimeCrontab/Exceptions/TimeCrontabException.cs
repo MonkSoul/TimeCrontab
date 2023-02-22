@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2021 百小僧, Baiqian Co.,Ltd.
+// Copyright (c) 2020-present 锟斤拷小僧, Baiqian Co.,Ltd.
 // TimeCrontab is licensed under Mulan PSL v2.
 // You can use this software according to the terms and conditions of the Mulan PSL v2.
 // You may obtain a copy of Mulan PSL v2 at:
@@ -11,12 +11,12 @@ using System;
 namespace TimeCrontab;
 
 /// <summary>
-/// TimeCrontab 模块异常类
+/// TimeCrontab 模锟斤拷锟届常锟斤拷
 /// </summary>
 public sealed class TimeCrontabException : Exception
 {
     /// <summary>
-    /// 构造函数
+    /// 锟斤拷锟届函锟斤拷
     /// </summary>
     public TimeCrontabException()
         : base()
@@ -24,19 +24,19 @@ public sealed class TimeCrontabException : Exception
     }
 
     /// <summary>
-    /// 构造函数
+    /// 锟斤拷锟届函锟斤拷
     /// </summary>
-    /// <param name="message">异常消息</param>
+    /// <param name="message">锟届常锟斤拷息</param>
     public TimeCrontabException(string message)
         : base(message)
     {
     }
 
     /// <summary>
-    /// 构造函数
+    /// 锟斤拷锟届函锟斤拷
     /// </summary>
-    /// <param name="message">异常消息</param>
-    /// <param name="innerException">内部异常</param>
+    /// <param name="message">锟届常锟斤拷息</param>
+    /// <param name="innerException">锟节诧拷锟届常</param>
     public TimeCrontabException(string message, Exception innerException)
         : base(message, innerException)
     {

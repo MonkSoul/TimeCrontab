@@ -266,7 +266,7 @@ TimeCrontab 采用 [MIT](./LICENSE) 开源许可证。
 ```
 MIT License
 
-Copyright (c) 2020-2022 百小僧, Baiqian Co.,Ltd.
+Copyright (c) 2020-present 百小僧, Baiqian Co.,Ltd.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

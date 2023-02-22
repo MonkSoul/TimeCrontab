@@ -1,18 +1,18 @@
 ﻿<Project>
 	<PropertyGroup>
-		<TargetFrameworks>net35;net452;netstandard2.0;netstandard2.1;net5.0;net6.0;net7.0</TargetFrameworks>
+		<TargetFrameworks>net35;net452;netstandard2.0;netstandard2.1;net5.0;net6.0;net7.0;net8.0</TargetFrameworks>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<IncludeSymbols>true</IncludeSymbols>
 		<Authors>百小僧</Authors>
 		<Company>Baiqian Co.,Ltd.</Company>
 		<Product>TimeCrontab</Product>
-		<Copyright>© 2020-2021 百小僧, Baiqian Co.,Ltd.</Copyright>
+		<Copyright>© 2020-present 百小僧, Baiqian Co.,Ltd.</Copyright>
 		<RepositoryUrl>https://gitee.com/dotnetchina/TimeCrontab</RepositoryUrl>
 		<RepositoryType>Gitee</RepositoryType>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageProjectUrl>https://gitee.com/dotnetchina/TimeCrontab</PackageProjectUrl>
-		<PackageTags>Crons;Crontab;TimeCrontab;百小僧;Monk;MonkSoul;ASP.NET;ASP.NET Core;.NET;.NET Core;.NET5;.NET6;Framework;dotNET;dotNET China;Web;Cross Platform</PackageTags>
+		<PackageTags>Crons;Crontab;TimeCrontab;百小僧;Monk;MonkSoul;ASP.NET;ASP.NET Core;.NET;.NET Core;.NET5;.NET6;.NET7;.NET8;Framework;dotNET;dotNET China;Web;Cross Platform</PackageTags>
 		<PackageOutputPath>../nupkgs</PackageOutputPath>
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>
 		<EmbedUntrackedSource>true</EmbedUntrackedSource>
