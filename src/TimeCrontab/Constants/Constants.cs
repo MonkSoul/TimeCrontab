@@ -12,12 +12,12 @@ using System.Collections.Generic;
 namespace TimeCrontab;
 
 /// <summary>
-/// TimeCrontab ģ�鳣��
+/// TimeCrontab 模块常量
 /// </summary>
-internal static class Constants
+internal static class Constants 
 {
     /// <summary>
-    /// Cron �ֶ��������ֵ
+    /// Cron 字段种类最大值
     /// </summary>
     internal static readonly Dictionary<CrontabFieldKind, int> MaximumDateTimeValues = new()
     {
@@ -31,7 +31,7 @@ internal static class Constants
     };
 
     /// <summary>
-    /// Cron �ֶ��������ֵ
+    /// Cron 字段种类最大值
     /// </summary>
     internal static readonly Dictionary<CrontabFieldKind, int> MinimumDateTimeValues = new()
     {
@@ -45,7 +45,7 @@ internal static class Constants
     };
 
     /// <summary>
-    /// Cron ��ͬ��ʽ�������ֶ�����
+    /// Cron 不同格式化类型字段数量
     /// </summary>
     internal static readonly Dictionary<CronStringFormat, int> ExpectedFieldCounts = new()
     {
@@ -56,9 +56,9 @@ internal static class Constants
     };
 
     /// <summary>
-    /// ���� C# �� <see cref="DayOfWeek"/> ö��Ԫ��ֵ
+    /// 配置 C# 中 <see cref="DayOfWeek"/> 枚举元素值
     /// </summary>
-    /// <remarks>��Ҫ��� C# �и����ͺ� Cron �����ֶ��򲻶�Ӧ����</remarks>
+    /// <remarks>主要解决 C# 中该类型和 Cron 星期字段域不对应问题</remarks>
     internal static readonly Dictionary<DayOfWeek, int> CronDays = new()
     {
         { DayOfWeek.Sunday, 0 },
@@ -71,7 +71,7 @@ internal static class Constants
     };
 
     /// <summary>
-    /// ���� Cron �����ֶ���ֵ֧�ֵ�����Ӣ����д
+    /// 定义 Cron 星期字段域值支持的星期英文缩写
     /// </summary>
     internal static readonly Dictionary<string, int> Days = new()
     {
@@ -85,7 +85,7 @@ internal static class Constants
     };
 
     /// <summary>
-    /// ���� Cron ���ֶ���ֵ֧�ֵ�����Ӣ����д
+    /// 定义 Cron 月字段域值支持的星期英文缩写
     /// </summary>
     internal static readonly Dictionary<string, int> Months = new()
     {
