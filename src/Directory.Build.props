@@ -4,9 +4,9 @@
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<IncludeSymbols>true</IncludeSymbols>
 		<Authors>百小僧</Authors>
-		<Company>Baiqian Co.,Ltd.</Company>
+		<Company>百签科技（广东）有限公司</Company>
 		<Product>TimeCrontab</Product>
-		<Copyright>© 2020-present 百小僧, Baiqian Co.,Ltd.</Copyright>
+		<Copyright>© 2020-present 百小僧, 百签科技（广东）有限公司</Copyright>
 		<RepositoryUrl>https://gitee.com/dotnetchina/TimeCrontab</RepositoryUrl>
 		<RepositoryType>Gitee</RepositoryType>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
