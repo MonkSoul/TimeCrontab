@@ -1,6 +1,6 @@
 // MIT 许可证
 //
-// 版权 (c) 2020-present 百小僧, 百签科技（广东）有限公司 和所有贡献者
+// 版权 © 2020-present 百小僧, 百签科技（广东）有限公司 和所有贡献者
 //
 // 特此免费授予任何获得本软件副本和相关文档文件（下称“软件”）的人不受限制地处置该软件的权利，
 // 包括不受限制地使用、复制、修改、合并、发布、分发、转授许可和/或出售该软件副本，
@@ -19,13 +19,13 @@ namespace TimeCrontab;
 /// <summary>
 /// TimeCrontab 模块异常类
 /// </summary>
-public sealed class TimeCrontabException : Exception 
+public sealed class TimeCrontabException : Exception
 {
     /// <summary>
     /// 构造函数
     /// </summary>
     public TimeCrontabException()
-        : base() 
+        : base()
     {
     }
 
@@ -34,7 +34,7 @@ public sealed class TimeCrontabException : Exception
     /// </summary>
     /// <param name="message">异常消息</param>
     public TimeCrontabException(string message)
-        : base(message) 
+        : base(message)
     {
     }
 
@@ -44,7 +44,7 @@ public sealed class TimeCrontabException : Exception
     /// <param name="message">异常消息</param>
     /// <param name="innerException">内部异常</param>
     public TimeCrontabException(string message, Exception innerException)
-        : base(message, innerException) 
+        : base(message, innerException)
     {
     }
 }
