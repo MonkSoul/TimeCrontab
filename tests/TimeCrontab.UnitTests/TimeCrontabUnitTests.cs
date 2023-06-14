@@ -20,6 +20,7 @@ public class TimeCrontabUnitTests
     [InlineData("0 */5 * * * *", "0 */5 * * * *", CronStringFormat.WithSeconds)]
     [InlineData("0 0/1 * * * ?", "0 */1 * * * ?", CronStringFormat.WithSeconds)]
     [InlineData("5-10 30-35 10-12 * * *", "5-10 30-35 10-12 * * *", CronStringFormat.WithSeconds)]
+    [InlineData("20/10 * * * * ?", "20/10 * * * * ?", CronStringFormat.WithSeconds)]
     public void TestParse(string expression, string outputString, CronStringFormat format)
     {
         var output = Crontab.Parse(expression, format).ToString();
@@ -41,6 +42,8 @@ public class TimeCrontabUnitTests
     [InlineData("0 */5 * * * *", "2022-01-01 00:05:00", CronStringFormat.WithSeconds)]
     [InlineData("0 0/1 * * * ?", "2022-01-01 00:01:00", CronStringFormat.WithSeconds)]
     [InlineData("5-10 30-35 10-12 * * *", "2022-01-01 10:30:05", CronStringFormat.WithSeconds)]
+    [InlineData("20/10 * * * * ?", "2022-01-01 00:00:20", CronStringFormat.WithSeconds)]
+    [InlineData("20/30 * * * * ?", "2022-01-01 00:00:20", CronStringFormat.WithSeconds)]
     public void TestGetNextOccurence(string expression, string nextOccurenceString, CronStringFormat format)
     {
         var beginTime = new DateTime(2022, 1, 1, 0, 0, 0);
