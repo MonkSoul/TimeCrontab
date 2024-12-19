@@ -1,10 +1,18 @@
 using System;
 using Xunit;
+using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace TimeCrontab.UnitTests;
 
 public class TimeCrontabUnitTests
 {
+    private readonly ITestOutputHelper _testOutput;
+    public TimeCrontabUnitTests(ITestOutputHelper testOutput)
+    {
+        _testOutput = testOutput;
+    }
+
     [Theory]
     [InlineData("* * * * *", "* * * * *", CronStringFormat.Default)]
     [InlineData("0 0 31W * *", "0 0 31W * *", CronStringFormat.Default)]
@@ -50,5 +58,18 @@ public class TimeCrontabUnitTests
         var crontab = Crontab.Parse(expression, format);
         var nextOccurence = crontab.GetNextOccurrence(beginTime);
         Assert.Equal(nextOccurenceString, nextOccurence.ToString("yyyy-MM-dd HH:mm:ss"));
+    }
+
+    [Fact]
+    public void TestRandownInSecondOrMinuteOrHour()
+    {
+        var beginTime = new DateTime(2022, 1, 1, 0, 0, 0);
+        var crontab = Crontab.Parse("R 0 0 * * ? *", CronStringFormat.WithSecondsAndYears);
+        Assert.Equal("R 0 0 * * ? *", crontab.ToString());
+        var nextOccurence = crontab.GetNextOccurrence(beginTime);
+        Assert.True(nextOccurence.Second >= 0 && nextOccurence.Second <= 59);
+        _testOutput.WriteLine(nextOccurence.Second.ToString());
+
+        Assert.Throws<TimeCrontabException>(() => Crontab.Parse("* 0 0 R * ? *", CronStringFormat.WithSecondsAndYears));
     }
 }

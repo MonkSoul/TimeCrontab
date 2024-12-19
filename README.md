@@ -198,6 +198,14 @@ var crontab = Crontab.YearlyAt("MAR", "MAY", "JUN");
 var crontab = Crontab.YearlyAt(3, "MAY", 6);
 ```
 
+**支持 `R` 随机时刻**
+
+`R` 是一个特殊的 `CRON` 表达式字符，允许您指定随机生成的时刻。例如，`R 0 0 * * ? *` 表示在每天 `00:00` 的随机秒数 (`0-59`) 时刻引发触发器。
+
+```cs
+var crontab = Crontab.Parse("R 0 0 * * ? *", CronStringFormat.WithSecondsAndYears);
+```
+
 [更多文档](https://furion.baiqian.ltd/docs/cron)
 
 ## 文档
@@ -209,6 +217,12 @@ var crontab = Crontab.YearlyAt(3, "MAY", 6);
 ```cs
 public class TimeCrontabUnitTests
 {
+    private readonly ITestOutputHelper _testOutput;
+    public TimeCrontabUnitTests(ITestOutputHelper testOutput)
+    {
+        _testOutput = testOutput;
+    }
+
     [Theory]
     [InlineData("* * * * *", "* * * * *", CronStringFormat.Default)]
     [InlineData("0 0 31W * *", "0 0 31W * *", CronStringFormat.Default)]
@@ -224,6 +238,7 @@ public class TimeCrontabUnitTests
     [InlineData("0 */5 * * * *", "0 */5 * * * *", CronStringFormat.WithSeconds)]
     [InlineData("0 0/1 * * * ?", "0 */1 * * * ?", CronStringFormat.WithSeconds)]
     [InlineData("5-10 30-35 10-12 * * *", "5-10 30-35 10-12 * * *", CronStringFormat.WithSeconds)]
+    [InlineData("20/10 * * * * ?", "20/10 * * * * ?", CronStringFormat.WithSeconds)]
     public void TestParse(string expression, string outputString, CronStringFormat format)
     {
         var output = Crontab.Parse(expression, format).ToString();
@@ -245,12 +260,27 @@ public class TimeCrontabUnitTests
     [InlineData("0 */5 * * * *", "2022-01-01 00:05:00", CronStringFormat.WithSeconds)]
     [InlineData("0 0/1 * * * ?", "2022-01-01 00:01:00", CronStringFormat.WithSeconds)]
     [InlineData("5-10 30-35 10-12 * * *", "2022-01-01 10:30:05", CronStringFormat.WithSeconds)]
+    [InlineData("20/10 * * * * ?", "2022-01-01 00:00:20", CronStringFormat.WithSeconds)]
+    [InlineData("20/30 * * * * ?", "2022-01-01 00:00:20", CronStringFormat.WithSeconds)]
     public void TestGetNextOccurence(string expression, string nextOccurenceString, CronStringFormat format)
     {
         var beginTime = new DateTime(2022, 1, 1, 0, 0, 0);
         var crontab = Crontab.Parse(expression, format);
         var nextOccurence = crontab.GetNextOccurrence(beginTime);
         Assert.Equal(nextOccurenceString, nextOccurence.ToString("yyyy-MM-dd HH:mm:ss"));
+    }
+
+    [Fact]
+    public void TestRandownInSecondOrMinuteOrHour()
+    {
+        var beginTime = new DateTime(2022, 1, 1, 0, 0, 0);
+        var crontab = Crontab.Parse("R 0 0 * * ? *", CronStringFormat.WithSecondsAndYears);
+        Assert.Equal("R 0 0 * * ? *", crontab.ToString());
+        var nextOccurence = crontab.GetNextOccurrence(beginTime);
+        Assert.True(nextOccurence.Second >= 0 && nextOccurence.Second <= 59);
+        _testOutput.WriteLine(nextOccurence.Second.ToString());
+
+        Assert.Throws<TimeCrontabException>(() => Crontab.Parse("* 0 0 R * ? *", CronStringFormat.WithSecondsAndYears));
     }
 }
 ```
