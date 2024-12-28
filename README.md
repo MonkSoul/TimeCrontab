@@ -292,3 +292,5 @@ public class TimeCrontabUnitTests
 ## 许可证
 
 TimeCrontab 采用 [MIT](./LICENSE) 开源许可证。
+
+[![](./assets/baiqian.svg)](https://baiqian.com)
