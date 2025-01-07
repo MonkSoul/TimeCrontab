@@ -206,11 +206,11 @@ var crontab = Crontab.YearlyAt(3, "MAY", 6);
 var crontab = Crontab.Parse("R 0 0 * * ? *", CronStringFormat.WithSecondsAndYears);
 ```
 
-[更多文档](https://furion.baiqian.ltd/docs/cron)
+[更多文档](https://furion.net/docs/cron)
 
 ## 文档
 
-您可以在[主页](https://furion.baiqian.ltd/docs/cron)找到 TimeCrontab 文档。
+您可以在[主页](https://furion.net/docs/cron)找到 TimeCrontab 文档。
 
 ## 测试
 
