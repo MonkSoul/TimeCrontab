@@ -16,6 +16,21 @@ namespace TimeCrontab;
 internal sealed class RandomParser : ICronParser, ITimeParser
 {
     /// <summary>
+    /// 随机对象
+    /// </summary>
+    private static readonly Random random = new();
+
+    /// <summary>
+    /// Cron 字段种类最小值
+    /// </summary>
+    private readonly int _minimumOfKind;
+
+    /// <summary>
+    /// Cron 字段种类最大值
+    /// </summary>
+    private readonly int _maximumOfKind;
+
+    /// <summary>
     /// 构造函数
     /// </summary>
     /// <param name="kind">Cron 字段种类</param>
@@ -31,6 +46,10 @@ internal sealed class RandomParser : ICronParser, ITimeParser
         }
 
         Kind = kind;
+
+        // 获取 Cron 字段种类最小值和最大值
+        _minimumOfKind = Constants.MinimumDateTimeValues[Kind];
+        _maximumOfKind = Constants.MaximumDateTimeValues[Kind];
     }
 
     /// <summary>
@@ -56,7 +75,8 @@ internal sealed class RandomParser : ICronParser, ITimeParser
     /// <exception cref="TimeCrontabException"></exception>
     public int? Next(int currentValue)
     {
-        return GenerateRandomValue();
+        // 生成最小值和最大值之间的随机数
+        return random.Next(_minimumOfKind, _maximumOfKind + 1);
     }
 
     /// <summary>
@@ -76,24 +96,5 @@ internal sealed class RandomParser : ICronParser, ITimeParser
     public override string ToString()
     {
         return "R";
-    }
-
-    /// <summary>
-    /// 随机对象
-    /// </summary>
-    private static readonly Random random = new();
-
-    /// <summary>
-    /// 生成指定范围的随机值
-    /// </summary>
-    /// <returns><see cref="int"/></returns>
-    private int GenerateRandomValue()
-    {
-        // 获取 Cron 字段种类最小值和最大值
-        var minimum = Constants.MinimumDateTimeValues[Kind];
-        var maximum = Constants.MaximumDateTimeValues[Kind];
-
-        // 生成最小值和最大值之间的随机数
-        return random.Next(minimum, maximum + 1);
     }
 }

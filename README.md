@@ -70,7 +70,7 @@ var nextOccurrence = crontab.GetNextOccurrence(DateTime.Now);
 var crontab = Crontab.Parse("* * * * * *", CronStringFormat.WithSeconds);
 while(true)
 {
-    Thread.Sleep(crontab.GetSleepMilliseconds(DateTime.Now));
+    Thread.Sleep(crontab.GetSleepTimeSpan(DateTime.Now));
     Console.WriteLine(DateTime.Now.ToString("G"));
 }
 
@@ -80,7 +80,7 @@ Task.Factory.StartNew(async () =>
 {
     while (true)
     {
-        await Task.Delay(crontab.GetSleepMilliseconds(DateTime.Now));
+        await Task.Delay(crontab.GetSleepTimeSpan(DateTime.Now));
         Console.WriteLine(DateTime.Now.ToString("G"));
     }
 }, TaskCreationOptions.LongRunning);
@@ -120,7 +120,7 @@ public class Worker : BackgroundService
                 await Task.CompletedTask;
             }, stoppingToken);
 
-            await Task.Delay(_crontab.GetSleepMilliseconds(DateTime.Now), stoppingToken);
+            await Task.Delay(_crontab.GetSleepTimeSpan(DateTime.Now), stoppingToken);
         }
     }
 }
