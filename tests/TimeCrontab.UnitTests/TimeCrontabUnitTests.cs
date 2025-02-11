@@ -60,6 +60,31 @@ public class TimeCrontabUnitTests
         Assert.Equal(nextOccurenceString, nextOccurence.ToString("yyyy-MM-dd HH:mm:ss"));
     }
 
+    [Theory]
+    [InlineData("* * * * *", "2021-12-31 23:59:00", CronStringFormat.Default)]
+    [InlineData("0 0 31W * *", "2021-12-31 00:00:00", CronStringFormat.Default)]
+    [InlineData("0 23 ? * MON-FRI", "2021-12-31 23:00:00", CronStringFormat.Default)]
+    [InlineData("*/5 * * * *", "2021-12-31 23:55:00", CronStringFormat.Default)]
+    [InlineData("30 11 * * 1-5", "2021-12-31 11:30:00", CronStringFormat.Default)]
+    [InlineData("23 12 * JAN *", "2021-01-31 12:23:00", CronStringFormat.Default)]
+    [InlineData("* * * * MON#3", "2021-12-20 23:59:00", CronStringFormat.Default)]
+    [InlineData("*/5 * L JAN *", "2021-01-31 23:55:00", CronStringFormat.Default)]
+    [InlineData("0 0 ? 1 MON#1", "2021-01-04 00:00:00", CronStringFormat.Default)]
+    [InlineData("0 0 LW * *", "2021-12-31 00:00:00", CronStringFormat.Default)]
+    [InlineData("0 30 10-13 ? * WED,FRI", "2021-12-31 13:30:00", CronStringFormat.WithSeconds)]
+    [InlineData("0 */5 * * * *", "2021-12-31 23:55:00", CronStringFormat.WithSeconds)]
+    [InlineData("0 0/1 * * * ?", "2021-12-31 23:59:00", CronStringFormat.WithSeconds)]
+    [InlineData("5-10 30-35 10-12 * * *", "2021-12-31 12:35:10", CronStringFormat.WithSeconds)]
+    [InlineData("20/10 * * * * ?", "2021-12-31 23:59:50", CronStringFormat.WithSeconds)]
+    [InlineData("20/30 * * * * ?", "2021-12-31 23:59:50", CronStringFormat.WithSeconds)]
+    public void GetPreviousOccurrence(string expression, string nextOccurenceString, CronStringFormat format)
+    {
+        var beginTime = new DateTime(2022, 1, 1, 0, 0, 0);
+        var crontab = Crontab.Parse(expression, format);
+        var previous = crontab.GetPreviousOccurrence(beginTime);
+        Assert.Equal(nextOccurenceString, previous.ToString("yyyy-MM-dd HH:mm:ss"));
+    }
+
     [Fact]
     public void TestRandownInSecondOrMinuteOrHour()
     {

@@ -109,7 +109,7 @@ public sealed partial class Crontab
     private static ICronParser ParseParser(string parser, CrontabFieldKind kind)
     {
         // Cron 字段中所有字母均采用大写方式，所以需要转换所有为大写再操作
-        var newParser = parser.ToUpper();
+        var newParser = parser.ToUpperInvariant();
 
         try
         {
@@ -593,6 +593,189 @@ public sealed partial class Crontab
     }
 
     /// <summary>
+    /// 获取特定时间范围上一个发生时间
+    /// </summary>
+    /// <param name="baseTime">起始时间</param>
+    /// <param name="endTime">结束时间</param>
+    /// <returns><see cref="DateTime"/></returns>
+    private DateTime InternalGetPreviousOccurence(DateTime baseTime, DateTime endTime)
+    {
+        // 判断当前 Cron 格式化类型是否支持秒
+        var isSecondFormat = Format == CronStringFormat.WithSeconds || Format == CronStringFormat.WithSecondsAndYears;
+
+        // 由于 Cron 格式化类型不包含毫秒，则裁剪掉毫秒部分
+        var newValue = baseTime;
+        newValue = newValue.AddMilliseconds(-newValue.Millisecond);
+
+        // 如果当前 Cron 格式化类型不支持秒，则裁剪掉秒部分
+        if (!isSecondFormat)
+        {
+            newValue = newValue.AddSeconds(-newValue.Second);
+        }
+
+        // 获取分钟、小时所有字符解析器
+        var minuteParsers = Parsers[CrontabFieldKind.Minute].Where(x => x is ITimeParser).Cast<ITimeParser>().ToList();
+        var hourParsers = Parsers[CrontabFieldKind.Hour].Where(x => x is ITimeParser).Cast<ITimeParser>().ToList();
+
+        // 获取秒、分钟、小时解析器中最小起始值
+        // 该值主要用来获取上一个发生值的输入参数
+        var lastSecondValue = newValue.Second;
+        var lastMinuteValue = minuteParsers.Select(x => x.Last()).Max();
+        var lastHourValue = hourParsers.Select(x => x.Last()).Max();
+
+        // 定义一个标识，标识当前时间山歌一个发生时间值是否进入新一轮循环
+        // 如：如果当前时间的秒数为 00，那么上一个秒数应该为 59，那么当前时间分钟就应该 -1
+        // 以此类推，如果 -1 后分钟数为 00，那么上一个分钟数也应该为 59，那么当前时间小时数就应该 -1
+        // ....
+        var overflow = true;
+
+        // 处理 Cron 格式化类型包含秒的情况 =================================================================
+        var newSeconds = newValue.Second;
+        if (isSecondFormat)
+        {
+            // 获取秒所有字符解析器
+            var secondParsers = Parsers[CrontabFieldKind.Second].Where(x => x is ITimeParser).Cast<ITimeParser>().ToList();
+
+            // 获取秒解析器最大末尾值
+            lastSecondValue = secondParsers.Select(x => x.Last()).Max();
+
+            // 获取秒上一个发生值
+            newSeconds = Decrement(secondParsers, newValue.Second, lastSecondValue, out overflow);
+
+            // 设置起始时间为上一个秒时间
+            newValue = new DateTime(newValue.Year, newValue.Month, newValue.Day, newValue.Hour, newValue.Minute, newSeconds);
+
+            // 如果当前秒并没有进入下一轮循环但存在不匹配的字符过滤器
+            if (!overflow && !IsMatch(newValue))
+            {
+                // 重置秒为起始值并标记 overflow 为 true 进入新一轮循环
+                newSeconds = lastSecondValue;
+
+                // 此时计算时间秒部分应该为末尾值
+                // 如 22:10:00 -> 22:09:59
+                newValue = new DateTime(newValue.Year, newValue.Month, newValue.Day, newValue.Hour, newValue.Minute, newSeconds);
+
+                // 标记进入下一轮循环
+                overflow = true;
+            }
+
+            // 如果程序到达这里，说明并没有进入上面分支，则直接返回上一秒时间
+            if (!overflow)
+            {
+                return MaxDate(newValue, endTime);
+            }
+        }
+
+        // 程序到达这里，说明秒部分已经标识进入新一轮循环，那么分支就应该获取上一个分钟发生值 =================================================================
+        var newMinutes = Decrement(minuteParsers, newValue.Minute + (overflow ? 0 : 1), lastMinuteValue, out overflow);
+
+        // 设置起始时间为上一个分钟时间
+        newValue = new DateTime(newValue.Year, newValue.Month, newValue.Day, newValue.Hour, newMinutes, overflow ? lastSecondValue : newSeconds);
+
+        // 如果当前分钟并没有进入下一轮循环但存在不匹配的字符过滤器
+        if (!overflow && !IsMatch(newValue))
+        {
+            // 重置秒，分钟为起始值并标记 overflow 为 true 进入新一轮循环
+            newSeconds = lastSecondValue;
+            newMinutes = lastMinuteValue;
+
+            // 此时计算时间秒和分钟部分应该为起始值
+            // 如 22:00:00 -> 21:59:59
+            newValue = new DateTime(newValue.Year, newValue.Month, newValue.Day, newValue.Hour, newMinutes, lastSecondValue);
+
+            // 标记进入下一轮循环
+            overflow = true;
+        }
+
+        // 如果程序到达这里，说明并没有进入上面分支，则直接返回上一分钟时间
+        if (!overflow)
+        {
+            return MaxDate(newValue, endTime);
+        }
+
+        // 程序到达这里，说明分钟部分已经标识进入新一轮循环，那么分支就应该获取下一个小时发生值 =================================================================
+        var newHours = Decrement(hourParsers, newValue.Hour + (overflow ? 0 : 1), lastHourValue, out overflow);
+
+        // 设置起始时间为上一个小时时间
+        newValue = new DateTime(newValue.Year, newValue.Month, newValue.Day, newHours,
+            overflow ? lastMinuteValue : newMinutes,
+            overflow ? lastSecondValue : newSeconds);
+
+        // 如果当前小时并没有进入下一轮循环但存在不匹配的字符过滤器
+        if (!overflow && !IsMatch(newValue))
+        {
+            // 此时计算时间秒，分钟和小时部分应该为末尾值
+            // 如 24:00:00 -> 23:59:59
+            newValue = new DateTime(newValue.Year, newValue.Month, newValue.Day, lastHourValue, lastMinuteValue, lastSecondValue);
+
+            // 标记进入下一轮循环
+            overflow = true;
+        }
+
+        // 如果程序到达这里，说明并没有进入上面分支，则直接返回下一小时时间
+        if (!overflow)
+        {
+            return MaxDate(newValue, endTime);
+        }
+
+        // 如果程序达到这里，说明天数变了（一旦天数变了，那么月份可能也变了，星期可能也变了，年份也可能变了）
+        // 所以这里的计算最为复杂
+        List<ITimeParser> yearParsers = null;
+
+        // 首先先判断当前 Cron 格式化类型是否支持年份
+        var isYearFormat = Format == CronStringFormat.WithYears || Format == CronStringFormat.WithSecondsAndYears;
+
+        // 如果支持，读取年份字符过滤器
+        if (isYearFormat)
+        {
+            yearParsers = Parsers[CrontabFieldKind.Year].Where(x => x is ITimeParser).Cast<ITimeParser>().ToList();
+        }
+
+        // 程序能够执行到这里，那么说明时间已经是 24:00:00，所以起始时间减 1 天
+        // 这里的代码看起来很奇怪，但是是为了处理终止时间为 12/31/9999 23:59:59.999 的情况，也就是世界末日了~~~
+        try
+        {
+            newValue = newValue.AddDays(-1);
+        }
+        catch
+        {
+            return endTime;
+        }
+
+        // 在有效的年份时间内死循环至天、周、月、年全部匹配才终止循环
+        while (!(IsMatch(newValue, CrontabFieldKind.Day)
+            && IsMatch(newValue, CrontabFieldKind.DayOfWeek)
+            && IsMatch(newValue, CrontabFieldKind.Month)
+            && (!isYearFormat || IsMatch(newValue, CrontabFieldKind.Year))))
+        {
+            // 如果当前匹配到的时间已经大于或等于终止时间，则直接返回
+            if (newValue <= endTime)
+            {
+                return MaxDate(newValue, endTime);
+            }
+
+            // 如果 Cron 年份字段域获取下一个发生值为 null，那么直接返回 终止时间
+            // 也就是已经没有匹配项了
+            if (isYearFormat && yearParsers.Select(x => x.Previous(newValue.Year + 1)).All(x => x == null))
+            {
+                return endTime;
+            }
+
+            // 同样防止终止时间为 12/31/9999 23:59:59.999 的情况
+            try
+            {
+                newValue = newValue.AddDays(-1);
+            }
+            catch
+            {
+                return endTime;
+            }
+        }
+
+        return MaxDate(newValue, endTime);
+    }
+
+    /// <summary>
     /// 获取当前时间解析器下一个发生值
     /// </summary>
     /// <param name="parsers">解析器</param>
@@ -609,8 +792,27 @@ public sealed partial class Crontab
 
         // 如果此时秒或分钟或23到达最大值，则应该返回起始值
         overflow = nextValue <= value;
-
         return nextValue;
+    }
+
+    /// <summary>
+    /// 获取当前时间解析器上一个发生值
+    /// </summary>
+    /// <param name="parsers">解析器</param>
+    /// <param name="value">当前值</param>
+    /// <param name="defaultValue">默认值</param>
+    /// <param name="overflow">控制秒、分钟、小时到达59秒/分和23小时开关</param>
+    /// <returns><see cref="int"/></returns>
+    private int Decrement(IEnumerable<ITimeParser> parsers, int value, int defaultValue, out bool overflow)
+    {
+        var previousValue = parsers.Select(x => x.Previous(value))
+            .Where(x => x < value)
+            .Max()
+            ?? defaultValue;
+
+        // 如果此时秒或分钟或00到达最小值，则应该返回末尾值
+        overflow = previousValue >= value;
+        return previousValue;
     }
 
     /// <summary>
@@ -623,6 +825,18 @@ public sealed partial class Crontab
     private static DateTime MinDate(DateTime newTime, DateTime endTime)
     {
         return newTime >= endTime ? endTime : newTime;
+    }
+
+    /// <summary>
+    /// 处理上一个发生时间边界值
+    /// </summary>
+    /// <remarks>如果发生时间小于终止时间，则返回终止时间，否则返回发生时间</remarks>
+    /// <param name="newTime">下一个发生时间</param>
+    /// <param name="endTime">终止时间</param>
+    /// <returns><see cref="DateTime"/></returns>
+    private DateTime MaxDate(DateTime newTime, DateTime endTime)
+    {
+        return newTime <= endTime ? endTime : newTime;
     }
 
     /// <summary>
