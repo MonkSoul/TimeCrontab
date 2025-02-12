@@ -291,12 +291,12 @@ public class TimeCrontabUnitTests
     [InlineData("5-10 30-35 10-12 * * *", "2021-12-31 12:35:10", CronStringFormat.WithSeconds)]
     [InlineData("20/10 * * * * ?", "2021-12-31 23:59:50", CronStringFormat.WithSeconds)]
     [InlineData("20/30 * * * * ?", "2021-12-31 23:59:50", CronStringFormat.WithSeconds)]
-    public void GetPreviousOccurrence(string expression, string nextOccurenceString, CronStringFormat format)
+    public void GetPreviousOccurrence(string expression, string previousOccurenceString, CronStringFormat format)
     {
         var beginTime = new DateTime(2022, 1, 1, 0, 0, 0);
         var crontab = Crontab.Parse(expression, format);
         var previous = crontab.GetPreviousOccurrence(beginTime);
-        Assert.Equal(nextOccurenceString, previous.ToString("yyyy-MM-dd HH:mm:ss"));
+        Assert.Equal(previousOccurenceString, previous.ToString("yyyy-MM-dd HH:mm:ss"));
     }
 
     [Fact]
