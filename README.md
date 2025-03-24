@@ -2,13 +2,13 @@
 
 [![license](https://img.shields.io/badge/license-MIT-orange?cacheSeconds=10800)](https://gitee.com/dotnetchina/TimeCrontab/blob/master/LICENSE) [![nuget](https://img.shields.io/nuget/v/TimeCrontab.svg?cacheSeconds=10800)](https://www.nuget.org/packages/TimeCrontab) [![dotNET China](https://img.shields.io/badge/organization-dotNET%20China-yellow?cacheSeconds=10800)](https://gitee.com/dotnetchina)
 
-.NET 全能 Cron 表达式解析库，支持 Cron 所有特性。
+.NET 全能 [Cron](http://crontab.org/) 表达式解析库，支持 [Cron](http://crontab.org/) 所有特性。
 
 ![TimeCrontab.drawio](https://gitee.com/dotnetchina/TimeCrontab/raw/net6/drawio/TimeCrontab.drawio.png "TimeCrontab.drawio.png")
 
 ## 特性
 
-- 支持 Cron 所有特性
+- 支持 [Cron](http://crontab.org/) 所有特性
 - 超高性能
 - 易拓展
 - 很小，仅 `4KB`
@@ -204,7 +204,7 @@ var crontab = Crontab.YearlyAt(3, "MAY", 6);
 
 **支持 `R` 随机时刻**
 
-`R` 是一个特殊的 `CRON` 表达式字符，允许您指定随机生成的时刻。例如，`R 0 0 * * ? *` 表示在每天 `00:00` 的随机秒数 (`0-59`) 时刻引发触发器。
+`R` 是一个特殊的 `CRON` 表达式字符，允许您指定随机生成的时刻。例如，`R 0 0 * * ? *` 表示在每天 `00:00` 的随机秒数 (`0-59`) 时刻引发触发器。[参考文献](https://help.eset.com/protect_admin/10.0/zh-CN/cron_expression.html)
 
 ```cs
 var crontab = Crontab.Parse("R 0 0 * * ? *", CronStringFormat.WithSecondsAndYears);
