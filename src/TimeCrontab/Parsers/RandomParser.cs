@@ -64,7 +64,7 @@ internal sealed class RandomParser : ICronParser, ITimeParser
     /// <returns><see cref="bool"/></returns>
     public bool IsMatch(DateTime datetime)
     {
-        return true;
+        return Kind is not CrontabFieldKind.Hour;
     }
 
     /// <summary>
