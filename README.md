@@ -71,7 +71,7 @@ var previousOccurrence = crontab.GetPreviousOccurrence(DateTime.Now);   // 上�
 
 ```cs
 // 阻塞方式
-var crontab = Crontab.Parse("* * * * * *", CronStringFormat.WithSeconds);
+var crontab = Crontab.Parse("* * * * *", CronStringFormat.Default);
 while(true)
 {
     Thread.Sleep(crontab.GetSleepTimeSpan(DateTime.Now));
@@ -79,7 +79,7 @@ while(true)
 }
 
 // 无阻塞方式
-var crontab = Crontab.Parse("* * * * * *", CronStringFormat.WithSeconds);
+var crontab = Crontab.Parse("* * * * *", CronStringFormat.Default);
 Task.Factory.StartNew(async () =>
 {
     while (true)
@@ -87,7 +87,7 @@ Task.Factory.StartNew(async () =>
         await Task.Delay(crontab.GetSleepTimeSpan(DateTime.Now));
         Console.WriteLine(DateTime.Now.ToString("G"));
     }
-}, TaskCreationOptions.LongRunning);
+}, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 ```
 
 **`BackgroundService` 实现简单定时任务**
@@ -100,31 +100,25 @@ namespace WorkerService;
 public class Worker : BackgroundService
 {
     private readonly ILogger<Worker> _logger;
-
     private readonly Crontab _crontab;
 
     public Worker(ILogger<Worker> logger)
     {
         _logger = logger;
-        _crontab = Crontab.Parse("* * * * * *", CronStringFormat.WithSeconds);
+        // 示例：每分钟执行一次（可根据需要修改表达式）
+        _crontab = Crontab.Parse("* * * * *", CronStringFormat.Default);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            var taskFactory = new TaskFactory(System.Threading.Tasks.TaskScheduler.Current);
+            // 计算距离下一次执行需要等待的时间
+            var sleepTimeSpan = _crontab.GetSleepTimeSpan(DateTime.Now);
+            await Task.Delay(sleepTimeSpan, stoppingToken);
 
-            await taskFactory.StartNew(async () =>
-            {
-                // 你的业务代码写到这里面
-
-                _logger.LogInformation("Worker running at: {time}", DateTime.Now);
-
-                await Task.CompletedTask;
-            }, stoppingToken);
-
-            await Task.Delay(_crontab.GetSleepTimeSpan(DateTime.Now), stoppingToken);
+            // 执行业务逻辑（直接在此处编写或调用方法）
+            _logger.LogInformation("Worker running at: {time}", DateTime.Now);
         }
     }
 }
