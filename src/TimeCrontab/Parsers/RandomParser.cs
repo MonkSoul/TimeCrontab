@@ -15,7 +15,7 @@ namespace TimeCrontab;
 /// <para>R 表示随机生成的时刻，仅在 <see cref="CrontabFieldKind.Second"/>、<see cref="CrontabFieldKind.Minute"/> 或 <see cref="CrontabFieldKind.Hour"/> 字段域中使用。</para>
 /// <para>支持区间随机：Rmin-max，例如 R30-59 表示在 30 到 59 之间随机。</para>
 /// <para>支持带步长的区间随机：Rmin-max/step，例如 R1-5/2 表示在 1,3,5 中随机。</para>
-/// <para>参考文献：https://help.eset.com/protect_admin/10.0/zh-CN/cron_expression.html。</para>
+/// <para>参考文献：https://help.eset.com/protect_admin/13.0/zh-CN/cron_expression.html。</para>
 /// </remarks>
 internal sealed class RandomParser : ICronParser, ITimeParser
 {
