@@ -198,10 +198,24 @@ var crontab = Crontab.YearlyAt(3, "MAY", 6);
 
 **支持 `R` 随机时刻**
 
-`R` 是一个特殊的 `CRON` 表达式字符，允许您指定随机生成的时刻。例如，`R 0 0 * * ? *` 表示在每天 `00:00` 的随机秒数 (`0-59`) 时刻引发触发器。[参考文献](https://help.eset.com/protect_admin/10.0/zh-CN/cron_expression.html)
+`R` 是一个特殊的 `CRON` 表达式字符，允许您指定随机生成的时刻。例如，`R 0 0 * * ? *` 表示在每天 `00:00` 的随机秒数 (`0-59`) 时刻引发触发器。`R R R 15W * ? *` 表示在每月 `15` 日的随机时刻（秒、分钟、小时）引发。如果 `15` 日为星期六，则会在星期五（即 `14` 日）引发触发器。如果 `15` 日为星期天，则会在星期一（即 `16` 日）引发触发器。[参考文献](https://help.eset.com/protect_admin/13.0/zh-CN/cron_expression.html)
 
 ```cs
+// 全范围随机（秒 0-59）
 var crontab = Crontab.Parse("R 0 0 * * ? *", CronStringFormat.WithSecondsAndYears);
+```
+
+`R` 也支持指定随机区间，格式为 `Rmin-max`。这对于将大量定时任务错峰执行非常有用，可以避免同时触发造成系统压力。
+
+```cs
+// 秒数在 30~59 之间随机
+var crontab = Crontab.Parse("R30-59 * * * * *", CronStringFormat.WithSeconds);
+
+// 分钟在 1~5 之间随机
+var crontab = Crontab.Parse("* R1-5 * * * *", CronStringFormat.WithSeconds);
+
+// 小时在 10~20 之间随机
+var crontab = Crontab.Parse("* * R10-20 * * *", CronStringFormat.WithSeconds);
 ```
 
 [更多文档](https://furion.net/docs/cron)
@@ -293,17 +307,118 @@ public class TimeCrontabUnitTests
         Assert.Equal(previousOccurenceString, previous.ToString("yyyy-MM-dd HH:mm:ss"));
     }
 
-    [Fact]
-    public void TestRandownInSecondOrMinuteOrHour()
+    [Theory]
+    [InlineData("R 0 0 * * ? *", "R 0 0 * * ? *", CronStringFormat.WithSecondsAndYears)]
+    [InlineData("R R R 15W * ? *", "R R R 15W * ? *", CronStringFormat.WithSecondsAndYears)]
+    [InlineData("R * * * * *", "R * * * * *", CronStringFormat.WithSeconds)]
+    [InlineData("* R * * * *", "* R * * * *", CronStringFormat.WithSeconds)]
+    [InlineData("* * R * * *", "* * R * * *", CronStringFormat.WithSeconds)]
+    public void TestParse_Random(string expression, string outputString, CronStringFormat format)
+    {
+        var output = Crontab.Parse(expression, format).ToString();
+        Assert.Equal(outputString, output);
+    }
+
+    [Theory]
+    [InlineData("R30-59 * * * * *", "R30-59 * * * * *", CronStringFormat.WithSeconds)]
+    [InlineData("* R1-5 * * * *", "* R1-5 * * * *", CronStringFormat.WithSeconds)]
+    [InlineData("* * R5-10 * * *", "* * R5-10 * * *", CronStringFormat.WithSeconds)]
+    [InlineData("R0-59 * * * * *", "R * * * * *", CronStringFormat.WithSeconds)]
+    [InlineData("R10-10 * * * * *", "R10-10 * * * * *", CronStringFormat.WithSeconds)]
+    public void TestParse_RandomRange(string expression, string outputString, CronStringFormat format)
+    {
+        var output = Crontab.Parse(expression, format).ToString();
+        Assert.Equal(outputString, output);
+    }
+
+    [Theory]
+    [InlineData("R 0 0 * * ? *", CronStringFormat.WithSecondsAndYears, 0, 59)]
+    [InlineData("* R 0 * * ? *", CronStringFormat.WithSecondsAndYears, 0, 59)]
+    [InlineData("* * R * * ? *", CronStringFormat.WithSecondsAndYears, 0, 23)]
+    public void TestNextOccurrence_RandomValueInRange(string expression, CronStringFormat format, int min, int max)
     {
         var beginTime = new DateTime(2022, 1, 1, 0, 0, 0);
-        var crontab = Crontab.Parse("R 0 0 * * ? *", CronStringFormat.WithSecondsAndYears);
-        Assert.Equal("R 0 0 * * ? *", crontab.ToString());
-        var nextOccurence = crontab.GetNextOccurrence(beginTime);
-        Assert.True(nextOccurence.Second >= 0 && nextOccurence.Second <= 59);
-        _testOutput.WriteLine(nextOccurence.Second.ToString());
+        var crontab = Crontab.Parse(expression, format);
+        var next = crontab.GetNextOccurrence(beginTime);
 
-        Assert.Throws<TimeCrontabException>(() => Crontab.Parse("* 0 0 R * ? *", CronStringFormat.WithSecondsAndYears));
+        int actualValue = GetRandomFieldValue(next, expression);
+        Assert.InRange(actualValue, min, max);
+        _testOutput.WriteLine($"Random value: {actualValue}");
+    }
+
+    [Theory]
+    [InlineData("R30-59 * * * * *", CronStringFormat.WithSeconds, 30, 59)]
+    [InlineData("* R10-20 * * * *", CronStringFormat.WithSeconds, 10, 20)]
+    [InlineData("* * R5-10 * * *", CronStringFormat.WithSeconds, 5, 10)]
+    [InlineData("R10-10 * * * * *", CronStringFormat.WithSeconds, 10, 10)]
+    public void TestNextOccurrence_RandomRange(string expression, CronStringFormat format, int min, int max)
+    {
+        var beginTime = new DateTime(2022, 1, 1, 0, 0, 0);
+        var crontab = Crontab.Parse(expression, format);
+        var next = crontab.GetNextOccurrence(beginTime);
+
+        int actualValue = GetRandomFieldValue(next, expression);
+        Assert.InRange(actualValue, min, max);
+        _testOutput.WriteLine($"Random range value: {actualValue}");
+    }
+
+    [Fact]
+    public void TestMultiRandomFieldNextOccurrence()
+    {
+        var beginTime = new DateTime(2022, 1, 1, 0, 0, 0);
+        var crontab = Crontab.Parse("R R R 15W * ? *", CronStringFormat.WithSecondsAndYears);
+        var next = crontab.GetNextOccurrence(beginTime);
+
+        Assert.InRange(next.Second, 0, 59);
+        Assert.InRange(next.Minute, 0, 59);
+        Assert.InRange(next.Hour, 0, 23);
+
+        Assert.Equal(14, next.Day);
+        Assert.Equal(1, next.Month);
+        Assert.Equal(2022, next.Year);
+
+        _testOutput.WriteLine($"Random multi-field: {next:yyyy-MM-dd HH:mm:ss}");
+    }
+
+    [Theory]
+    [InlineData("R,30 * * * * *", CronStringFormat.WithSeconds)]
+    [InlineData("* R,5 * * * *", CronStringFormat.WithSeconds)]
+    [InlineData("* * R,10 * * *", CronStringFormat.WithSeconds)]
+    [InlineData("R30-59,20 * * * * *", CronStringFormat.WithSeconds)]
+    public void TestRandomCombinedWithOtherValuesThrows(string expression, CronStringFormat format)
+    {
+        Assert.Throws<TimeCrontabException>(() => Crontab.Parse(expression, format));
+    }
+
+    [Theory]
+    [InlineData("R60-30 * * * * *", CronStringFormat.WithSeconds)]
+    [InlineData("* R-1-5 * * * *", CronStringFormat.WithSeconds)]
+    [InlineData("* * R0-60 * * *", CronStringFormat.WithSeconds)]
+    [InlineData("Rabc-def * * * * *", CronStringFormat.WithSeconds)]
+    public void TestInvalidRandomRangeThrows(string expression, CronStringFormat format)
+    {
+        Assert.Throws<TimeCrontabException>(() => Crontab.Parse(expression, format));
+    }
+
+    private static int GetRandomFieldValue(DateTime dateTime, string expression)
+    {
+        var parts = expression.Split(' ');
+
+        for (int i = 0; i < 3; i++)
+        {
+            if (parts[i].StartsWith("R"))
+            {
+                return i switch
+                {
+                    0 => dateTime.Second,
+                    1 => dateTime.Minute,
+                    2 => dateTime.Hour,
+                    _ => throw new InvalidOperationException()
+                };
+            }
+        }
+
+        throw new ArgumentException("No random field found in expression");
     }
 }
 ```

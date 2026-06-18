@@ -83,16 +83,147 @@ public class TimeCrontabUnitTests
         Assert.Equal(previousOccurenceString, previous.ToString("yyyy-MM-dd HH:mm:ss"));
     }
 
-    [Fact]
-    public void TestRandownInSecondOrMinuteOrHour()
+    /// <summary>
+    /// 测试全范围 R 的解析与字符串输出
+    /// </summary>
+    [Theory]
+    [InlineData("R 0 0 * * ? *", "R 0 0 * * ? *", CronStringFormat.WithSecondsAndYears)]
+    [InlineData("R R R 15W * ? *", "R R R 15W * ? *", CronStringFormat.WithSecondsAndYears)]
+    [InlineData("R * * * * *", "R * * * * *", CronStringFormat.WithSeconds)]
+    [InlineData("* R * * * *", "* R * * * *", CronStringFormat.WithSeconds)]
+    [InlineData("* * R * * *", "* * R * * *", CronStringFormat.WithSeconds)]
+    public void TestParse_Random(string expression, string outputString, CronStringFormat format)
+    {
+        var output = Crontab.Parse(expression, format).ToString();
+        Assert.Equal(outputString, output);
+    }
+
+    /// <summary>
+    /// 测试区间随机 Rmin-max 的解析与字符串输出
+    /// </summary>
+    [Theory]
+    [InlineData("R30-59 * * * * *", "R30-59 * * * * *", CronStringFormat.WithSeconds)]
+    [InlineData("* R1-5 * * * *", "* R1-5 * * * *", CronStringFormat.WithSeconds)]
+    [InlineData("* * R5-10 * * *", "* * R5-10 * * *", CronStringFormat.WithSeconds)]
+    [InlineData("R0-59 * * * * *", "R * * * * *", CronStringFormat.WithSeconds)] // 全范围等价于 R
+    [InlineData("R10-10 * * * * *", "R10-10 * * * * *", CronStringFormat.WithSeconds)] // 固定值区间
+    public void TestParse_RandomRange(string expression, string outputString, CronStringFormat format)
+    {
+        var output = Crontab.Parse(expression, format).ToString();
+        Assert.Equal(outputString, output);
+    }
+
+    /// <summary>
+    /// 验证全范围 R 下一次发生时间的随机值在合法范围内
+    /// </summary>
+    [Theory]
+    [InlineData("R 0 0 * * ? *", CronStringFormat.WithSecondsAndYears, 0, 59)]
+    [InlineData("* R 0 * * ? *", CronStringFormat.WithSecondsAndYears, 0, 59)]
+    [InlineData("* * R * * ? *", CronStringFormat.WithSecondsAndYears, 0, 23)]
+    public void TestNextOccurrence_RandomValueInRange(string expression, CronStringFormat format, int min, int max)
     {
         var beginTime = new DateTime(2022, 1, 1, 0, 0, 0);
-        var crontab = Crontab.Parse("R 0 0 * * ? *", CronStringFormat.WithSecondsAndYears);
-        Assert.Equal("R 0 0 * * ? *", crontab.ToString());
-        var nextOccurence = crontab.GetNextOccurrence(beginTime);
-        Assert.True(nextOccurence.Second >= 0 && nextOccurence.Second <= 59);
-        _testOutput.WriteLine(nextOccurence.Second.ToString());
+        var crontab = Crontab.Parse(expression, format);
+        var next = crontab.GetNextOccurrence(beginTime);
 
-        Assert.Throws<TimeCrontabException>(() => Crontab.Parse("* 0 0 R * ? *", CronStringFormat.WithSecondsAndYears));
+        int actualValue = GetRandomFieldValue(next, expression);
+        Assert.InRange(actualValue, min, max);
+        _testOutput.WriteLine($"Random value: {actualValue}");
+    }
+
+    /// <summary>
+    /// 验证区间随机 Rmin-max 下一次发生时间的随机值在指定区间内
+    /// </summary>
+    [Theory]
+    [InlineData("R30-59 * * * * *", CronStringFormat.WithSeconds, 30, 59)]
+    [InlineData("* R10-20 * * * *", CronStringFormat.WithSeconds, 10, 20)]
+    [InlineData("* * R5-10 * * *", CronStringFormat.WithSeconds, 5, 10)]
+    [InlineData("R10-10 * * * * *", CronStringFormat.WithSeconds, 10, 10)] // 固定值
+    public void TestNextOccurrence_RandomRange(string expression, CronStringFormat format, int min, int max)
+    {
+        var beginTime = new DateTime(2022, 1, 1, 0, 0, 0);
+        var crontab = Crontab.Parse(expression, format);
+        var next = crontab.GetNextOccurrence(beginTime);
+
+        int actualValue = GetRandomFieldValue(next, expression);
+        Assert.InRange(actualValue, min, max);
+        _testOutput.WriteLine($"Random range value: {actualValue}");
+    }
+
+    /// <summary>
+    /// 测试多个随机字段组合（R R R 15W * ? *）
+    /// 确保秒、分、时三个字段均为随机且合法
+    /// </summary>
+    [Fact]
+    public void TestMultiRandomFieldNextOccurrence()
+    {
+        var beginTime = new DateTime(2022, 1, 1, 0, 0, 0);
+        var crontab = Crontab.Parse("R R R 15W * ? *", CronStringFormat.WithSecondsAndYears);
+        var next = crontab.GetNextOccurrence(beginTime);
+
+        // 秒 0-59
+        Assert.InRange(next.Second, 0, 59);
+        // 分 0-59
+        Assert.InRange(next.Minute, 0, 59);
+        // 时 0-23
+        Assert.InRange(next.Hour, 0, 23);
+
+        // 因为 2022-01-15 是周六，15W 会调整到 14 号（周五）
+        Assert.Equal(14, next.Day);
+        Assert.Equal(1, next.Month);
+        Assert.Equal(2022, next.Year);
+
+        _testOutput.WriteLine($"Random multi-field: {next:yyyy-MM-dd HH:mm:ss}");
+    }
+
+    /// <summary>
+    /// 测试 R 与其他值混用应抛出异常
+    /// </summary>
+    [Theory]
+    [InlineData("R,30 * * * * *", CronStringFormat.WithSeconds)]
+    [InlineData("* R,5 * * * *", CronStringFormat.WithSeconds)]
+    [InlineData("* * R,10 * * *", CronStringFormat.WithSeconds)]
+    [InlineData("R30-59,20 * * * * *", CronStringFormat.WithSeconds)]
+    public void TestRandomCombinedWithOtherValuesThrows(string expression, CronStringFormat format)
+    {
+        Assert.Throws<TimeCrontabException>(() => Crontab.Parse(expression, format));
+    }
+
+    /// <summary>
+    /// 测试无效的 R 区间
+    /// </summary>
+    [Theory]
+    [InlineData("R60-30 * * * * *", CronStringFormat.WithSeconds)] // min > max
+    [InlineData("* R-1-5 * * * *", CronStringFormat.WithSeconds)] // 负数
+    [InlineData("* * R0-60 * * *", CronStringFormat.WithSeconds)] // 超出小时最大值
+    [InlineData("Rabc-def * * * * *", CronStringFormat.WithSeconds)] // 非数字
+    public void TestInvalidRandomRangeThrows(string expression, CronStringFormat format)
+    {
+        Assert.Throws<TimeCrontabException>(() => Crontab.Parse(expression, format));
+    }
+
+    /// <summary>
+    /// 根据表达式判断 R 所在字段，并提取 DateTime 对应值
+    /// </summary>
+    private static int GetRandomFieldValue(DateTime dateTime, string expression)
+    {
+        var parts = expression.Split(' ');
+
+        // R 一定在表达式的前三个字段之一（秒、分、时）
+        for (int i = 0; i < 3; i++)
+        {
+            if (parts[i].StartsWith("R"))
+            {
+                return i switch
+                {
+                    0 => dateTime.Second,
+                    1 => dateTime.Minute,
+                    2 => dateTime.Hour,
+                    _ => throw new InvalidOperationException()
+                };
+            }
+        }
+
+        throw new ArgumentException("No random field found in expression");
     }
 }

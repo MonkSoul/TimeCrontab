@@ -132,14 +132,9 @@ internal sealed class RangeParser : ICronParser, ITimeParser
 
         // 获取下一个匹配的发生值
         var maximum = Constants.MaximumDateTimeValues[Kind];
-        while (newValue < maximum && !IsMatch(newValue.Value))
+        while (newValue <= maximum && !IsMatch(newValue.Value))
         {
             newValue++;
-        }
-
-        if (Kind == CrontabFieldKind.Year && newValue >= maximum)
-        {
-            return null;
         }
 
         return newValue > maximum ? null : newValue;
@@ -166,14 +161,9 @@ internal sealed class RangeParser : ICronParser, ITimeParser
 
         // 获取上一个匹配的发生值
         var minimum = Constants.MinimumDateTimeValues[Kind];
-        while (newValue > minimum && !IsMatch(newValue.Value))
+        while (newValue >= minimum && !IsMatch(newValue.Value))
         {
             newValue--;
-        }
-
-        if (Kind == CrontabFieldKind.Year && newValue <= minimum)
-        {
-            return null;
         }
 
         return newValue < minimum ? null : newValue;
@@ -209,7 +199,7 @@ internal sealed class RangeParser : ICronParser, ITimeParser
         var newValue = 0;
 
         // 获取首个符合的起始值
-        while (newValue < maximum && !IsMatch(newValue))
+        while (newValue <= maximum && !IsMatch(newValue))
         {
             newValue++;
         }
@@ -255,16 +245,16 @@ internal sealed class RangeParser : ICronParser, ITimeParser
             throw new TimeCrontabException("Cannot call Last for Day, Month or DayOfWeek types.");
         }
 
-        var maximum = Constants.MinimumDateTimeValues[Kind];
+        var minimum = Constants.MinimumDateTimeValues[Kind];
         var newValue = Constants.MaximumDateTimeValues[Kind];
 
         // 获取首个符合的末尾值
-        while (newValue > maximum && !IsMatch(newValue))
+        while (newValue >= minimum && !IsMatch(newValue))
         {
             newValue--;
         }
 
-        if (newValue < maximum)
+        if (newValue < minimum)
         {
             throw new TimeCrontabException(string.Format("Previous value for {0} on field {1} could not be found!",
                 ToString(),

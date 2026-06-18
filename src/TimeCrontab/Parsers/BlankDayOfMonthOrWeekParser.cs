@@ -50,48 +50,6 @@ internal sealed class BlankDayOfMonthOrWeekParser : ICronParser
     }
 
     /// <summary>
-    /// 获取 Cron 字段种类当前值的下一个发生值
-    /// </summary>
-    /// <param name="currentValue">时间值</param>
-    /// <returns><see cref="int"/></returns>
-    /// <exception cref="TimeCrontabException"></exception>
-    public int? Next(int currentValue)
-    {
-        // 由于天、月、周计算复杂，所以这里排除对它们的处理
-        if (Kind == CrontabFieldKind.Day
-            || Kind == CrontabFieldKind.Month
-            || Kind == CrontabFieldKind.DayOfWeek)
-        {
-            throw new TimeCrontabException("Cannot call Next for Day, Month or DayOfWeek types.");
-        }
-
-        // 默认递增步长为 1
-        int? newValue = currentValue + 1;
-
-        // 验证最大值
-        var maximum = Constants.MaximumDateTimeValues[Kind];
-        return newValue >= maximum ? null : newValue;
-    }
-
-    /// <summary>
-    /// 获取 Cron 字段种类字段起始值
-    /// </summary>
-    /// <returns><see cref="int"/></returns>
-    /// <exception cref="TimeCrontabException"></exception>
-    public int First()
-    {
-        // 由于天、月、周计算复杂，所以这里排除对它们的处理
-        if (Kind == CrontabFieldKind.Day
-            || Kind == CrontabFieldKind.Month
-            || Kind == CrontabFieldKind.DayOfWeek)
-        {
-            throw new TimeCrontabException("Cannot call First for Day, Month or DayOfWeek types.");
-        }
-
-        return 0;
-    }
-
-    /// <summary>
     /// 将解析器转换成字符串输出
     /// </summary>
     /// <returns><see cref="string"/></returns>

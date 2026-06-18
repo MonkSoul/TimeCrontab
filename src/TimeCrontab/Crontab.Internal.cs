@@ -89,7 +89,17 @@ public sealed partial class Crontab
 
         try
         {
-            return field.Split(',').Select(parser => ParseParser(parser, kind)).ToList();
+            var parsers = field.Split(',').Select(parser => ParseParser(parser, kind)).ToList();
+
+            // 禁止 R 字符与其他值在同一字段内混用（例如 R,30 或 R10-20,30 是非法的）
+            if (parsers.Any(p => p is RandomParser) && parsers.Count > 1)
+            {
+                throw new TimeCrontabException(
+                    string.Format("The 'R' random parser cannot be combined with other values in the {0} field.",
+                    Enum.GetName(typeof(CrontabFieldKind), kind)));
+            }
+
+            return parsers;
         }
         catch (Exception ex)
         {
@@ -158,10 +168,30 @@ public sealed partial class Crontab
                 }
             }
 
-            // 判断值是否等于 R
-            if (newParser == "R")
+            // 判断值是否以 R 开头（支持全范围 R 或区间 Rmin-max）
+            if (newParser.StartsWith("R"))
             {
-                return new RandomParser(kind);
+                var remaining = newParser.Substring(1);
+
+                // 全范围随机 R
+                if (string.IsNullOrEmpty(remaining))
+                {
+                    return new RandomParser(kind);
+                }
+
+                // 尝试解析区间 Rmin-max（例如 R30-60）
+                if (remaining.Contains("-"))
+                {
+                    var parts = remaining.Split('-');
+                    if (parts.Length == 2 &&
+                        int.TryParse(parts[0], out var minVal) &&
+                        int.TryParse(parts[1], out var maxVal))
+                    {
+                        return new RandomParser(kind, minVal, maxVal);
+                    }
+                }
+
+                throw new TimeCrontabException(string.Format("Invalid parser '{0}'.", parser));
             }
 
             // 判断值是否等于 ?

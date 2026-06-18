@@ -116,7 +116,7 @@ internal sealed class StepParser : ICronParser, ITimeParser
 
         // 获取下一个匹配的发生值
         var maximum = Constants.MaximumDateTimeValues[Kind];
-        while (newValue < maximum && !IsMatch(newValue.Value))
+        while (newValue <= maximum && !IsMatch(newValue.Value))
         {
             newValue++;
         }
@@ -145,7 +145,7 @@ internal sealed class StepParser : ICronParser, ITimeParser
 
         // 获取上一个匹配的发生值
         var minimum = Constants.MinimumDateTimeValues[Kind];
-        while (newValue > minimum && !IsMatch(newValue.Value))
+        while (newValue >= minimum && !IsMatch(newValue.Value))
         {
             newValue--;
         }
@@ -183,7 +183,7 @@ internal sealed class StepParser : ICronParser, ITimeParser
         var newValue = 0;
 
         // 获取首个符合的起始值
-        while (newValue < maximum && !IsMatch(newValue))
+        while (newValue <= maximum && !IsMatch(newValue))
         {
             newValue++;
         }
@@ -233,7 +233,7 @@ internal sealed class StepParser : ICronParser, ITimeParser
         var newValue = Constants.MaximumDateTimeValues[Kind];
 
         // 获取首个符合的末尾值
-        while (newValue > minimum && !IsMatch(newValue))
+        while (newValue >= minimum && !IsMatch(newValue))
         {
             newValue--;
         }
