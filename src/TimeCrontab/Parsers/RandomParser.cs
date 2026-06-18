@@ -260,9 +260,8 @@ internal sealed class RandomParser : ICronParser, ITimeParser
     /// <remarks>
     /// 如果存在候选集合（步长模式），则随机选择一个索引返回对应的值；
     /// 否则在 [_minValue, _maxValue] 区间内直接随机生成一个整数。
-    /// 该随机过程线程安全。
     /// </remarks>
-    /// <returns>随机生成的字段值</returns>
+    /// <returns><see cref="string"/></returns>
     private int GetRandomValue()
     {
         if (_candidates != null)
