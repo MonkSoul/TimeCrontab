@@ -3,6 +3,8 @@
 // 此源代码遵循位于源代码树根目录中的 LICENSE 文件的许可证。
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace TimeCrontab;
 
@@ -12,7 +14,8 @@ namespace TimeCrontab;
 /// <remarks>
 /// <para>R 表示随机生成的时刻，仅在 <see cref="CrontabFieldKind.Second"/>、<see cref="CrontabFieldKind.Minute"/> 或 <see cref="CrontabFieldKind.Hour"/> 字段域中使用。</para>
 /// <para>支持区间随机：Rmin-max，例如 R30-59 表示在 30 到 59 之间随机。</para>
-/// <para>参考文献：https://help.eset.com/protect_admin/13.0/zh-CN/cron_expression.html。</para>
+/// <para>支持带步长的区间随机：Rmin-max/step，例如 R1-5/2 表示在 1,3,5 中随机。</para>
+/// <para>参考文献：https://help.eset.com/protect_admin/10.0/zh-CN/cron_expression.html。</para>
 /// </remarks>
 internal sealed class RandomParser : ICronParser, ITimeParser
 {
@@ -41,9 +44,17 @@ internal sealed class RandomParser : ICronParser, ITimeParser
             }
             _localRandom = new Random(seed);
         }
-
         return _localRandom;
     }
+
+    /// <summary>
+    /// 候选值集合
+    /// </summary>
+    /// <remarks>
+    /// 当指定步长时，该集合预先存储所有满足步长条件的值（例如 R1-10/3 会生成 {1,4,7,10}）。
+    /// 若无步长，则为 null，表示区间内任意值随机。
+    /// </remarks>
+    private readonly List<int> _candidates;
 
     /// <summary>
     /// 随机范围最小值（包含）
@@ -56,23 +67,46 @@ internal sealed class RandomParser : ICronParser, ITimeParser
     private readonly int _maxValue;
 
     /// <summary>
-    /// 构造函数（全范围随机）
+    /// 步长
     /// </summary>
+    /// <remarks>可为 null，表示无步长限制，此时直接从整个区间随机。</remarks>
+    private readonly int? _step;
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <remarks>全范围随机。</remarks>
     /// <param name="kind">Cron 字段种类</param>
-    /// <exception cref="TimeCrontabException"></exception>
     public RandomParser(CrontabFieldKind kind)
-        : this(kind, Constants.MinimumDateTimeValues[kind], Constants.MaximumDateTimeValues[kind])
+        : this(kind, Constants.MinimumDateTimeValues[kind], Constants.MaximumDateTimeValues[kind], null)
     {
     }
 
     /// <summary>
-    /// 构造函数（指定随机区间）
+    /// 构造函数
     /// </summary>
+    /// <remarks>指定随机区间，无步长。区间内的每个值都有相同的被选中概率。</remarks>
     /// <param name="kind">Cron 字段种类</param>
     /// <param name="minValue">最小值（包含）</param>
     /// <param name="maxValue">最大值（包含）</param>
-    /// <exception cref="TimeCrontabException"></exception>
     public RandomParser(CrontabFieldKind kind, int minValue, int maxValue)
+        : this(kind, minValue, maxValue, null)
+    {
+    }
+
+    /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <remarks>
+    /// 指定随机区间及步长。当提供步长时，会预先生成候选值集合，后续随机只会从这些候选值中抽取。
+    /// 例如 minValue=1, maxValue=10, step=3 会生成候选集 {1,4,7,10}。
+    /// </remarks>
+    /// <param name="kind">Cron 字段种类</param>
+    /// <param name="minValue">最小值（包含）</param>
+    /// <param name="maxValue">最大值（包含）</param>
+    /// <param name="step">步长，可为 null 表示无步长限制</param>
+    /// <exception cref="TimeCrontabException"></exception>
+    public RandomParser(CrontabFieldKind kind, int minValue, int maxValue, int? step)
     {
         // 验证 R 字符是否在 Second、Minute 或 Hour 字段域中使用
         if (kind != CrontabFieldKind.Second &&
@@ -101,9 +135,38 @@ internal sealed class RandomParser : ICronParser, ITimeParser
             throw new TimeCrontabException($"The minimum value {minValue} cannot be greater than the maximum value {maxValue}.");
         }
 
+        // 验证步长有效性（步长必须为正整数且不能超过字段上限）
+        if (step.HasValue && (step.Value <= 0 || step.Value > fieldMax))
+        {
+            throw new TimeCrontabException($"Steps = {step} is out of bounds for <{kind}> field.");
+        }
+
         Kind = kind;
         _minValue = minValue;
         _maxValue = maxValue;
+        _step = step;
+
+        // 如果提供了步长，则预先生成所有符合步长条件的候选值
+        // 生成规则：从 minValue 开始，每次增加 step，直到超过 maxValue
+        if (_step.HasValue)
+        {
+            _candidates = [];
+
+            for (var val = _minValue; val <= _maxValue; val++)
+            {
+                // 使用 (val - _minValue) % step == 0 来判断是否在步长序列上
+                if ((val - _minValue) % _step.Value == 0)
+                {
+                    _candidates.Add(val);
+                }
+            }
+
+            // 必须至少有一个候选值，否则抛出异常（例如区间内没有任何值满足步长）
+            if (_candidates.Count == 0)
+            {
+                throw new TimeCrontabException($"The random range {minValue}-{maxValue}/{step} produces no valid values.");
+            }
+        }
     }
 
     /// <summary>
@@ -132,8 +195,7 @@ internal sealed class RandomParser : ICronParser, ITimeParser
     /// <returns><see cref="int"/></returns>
     public int? Next(int currentValue)
     {
-        // 在指定区间内生成随机数
-        return GetRandom().Next(_minValue, _maxValue + 1);
+        return GetRandomValue();
     }
 
     /// <summary>
@@ -143,25 +205,33 @@ internal sealed class RandomParser : ICronParser, ITimeParser
     /// <returns><see cref="int"/></returns>
     public int? Previous(int currentValue)
     {
-        return GetRandom().Next(_minValue, _maxValue + 1);
+        return GetRandomValue();
     }
 
     /// <summary>
-    /// 获取 Cron 字段种类字段起始值（区间最小值）
+    /// 获取 Cron 字段种类字段起始值
     /// </summary>
+    /// <remarks>
+    /// 若存在步长，则返回候选集合中的最小值；否则返回区间最小值。
+    /// 该值主要用于调度算法在需要回退到字段起始时使用。
+    /// </remarks>
     /// <returns><see cref="int"/></returns>
     public int First()
     {
-        return _minValue;
+        return _candidates != null ? _candidates.Min() : _minValue;
     }
 
     /// <summary>
-    /// 获取 Cron 字段种类字段末尾值（区间最大值）
+    /// 获取 Cron 字段种类字段末尾值
     /// </summary>
+    /// <remarks>
+    /// 若存在步长，则返回候选集合中的最大值；否则返回区间最大值。
+    /// 该值主要用于调度算法在需要前推到字段末尾时使用。
+    /// </remarks>
     /// <returns><see cref="int"/></returns>
     public int Last()
     {
-        return _maxValue;
+        return _candidates != null ? _candidates.Max() : _maxValue;
     }
 
     /// <summary>
@@ -170,10 +240,39 @@ internal sealed class RandomParser : ICronParser, ITimeParser
     /// <returns><see cref="string"/></returns>
     public override string ToString()
     {
-        // 全范围则输出 "R"，否则输出 "Rmin-max"
         var fieldMin = Constants.MinimumDateTimeValues[Kind];
         var fieldMax = Constants.MaximumDateTimeValues[Kind];
 
-        return (_minValue == fieldMin && _maxValue == fieldMax) ? "R" : $"R{_minValue}-{_maxValue}";
+        // 无步长情况
+        if (!_step.HasValue)
+        {
+            // 如果区间等于字段全范围，简化为 "R"；否则输出 "Rmin-max"
+            return (_minValue == fieldMin && _maxValue == fieldMax) ? "R" : $"R{_minValue}-{_maxValue}";
+        }
+
+        // 带步长情况，输出完整格式 "Rmin-max/step"，无论区间是否全范围
+        return $"R{_minValue}-{_maxValue}/{_step.Value}";
+    }
+
+    /// <summary>
+    /// 生成一个随机值
+    /// </summary>
+    /// <remarks>
+    /// 如果存在候选集合（步长模式），则随机选择一个索引返回对应的值；
+    /// 否则在 [_minValue, _maxValue] 区间内直接随机生成一个整数。
+    /// 该随机过程线程安全。
+    /// </remarks>
+    /// <returns>随机生成的字段值</returns>
+    private int GetRandomValue()
+    {
+        if (_candidates != null)
+        {
+            // 从候选集合中均匀随机选取
+            var index = GetRandom().Next(_candidates.Count);
+            return _candidates[index];
+        }
+
+        // 区间内完全随机（含两端）
+        return GetRandom().Next(_minValue, _maxValue + 1);
     }
 }

@@ -203,6 +203,53 @@ public class TimeCrontabUnitTests
     }
 
     /// <summary>
+    /// 测试带步长的随机区间 Rmin-max/step
+    /// </summary>
+    [Theory]
+    [InlineData("R0-59/5 * * * * *", "R0-59/5 * * * * *", CronStringFormat.WithSeconds)]
+    [InlineData("* R0-59/10 * * * *", "* R0-59/10 * * * *", CronStringFormat.WithSeconds)]
+    [InlineData("* * R0-23/2 * * *", "* * R0-23/2 * * *", CronStringFormat.WithSeconds)]
+    [InlineData("R1-5/2 * * * * *", "R1-5/2 * * * * *", CronStringFormat.WithSeconds)]
+    [InlineData("R1-5/1 * * * * *", "R1-5/1 * * * * *", CronStringFormat.WithSeconds)]
+    public void TestParse_RandomStep(string expression, string outputString, CronStringFormat format)
+    {
+        var output = Crontab.Parse(expression, format).ToString();
+        Assert.Equal(outputString, output);
+    }
+
+    /// <summary>
+    /// 验证带步长随机区间下一次发生值在候选集中
+    /// </summary>
+    [Theory]
+    [InlineData("R0-59/10 * * * * *", CronStringFormat.WithSeconds, new int[] { 0, 10, 20, 30, 40, 50 })]
+    [InlineData("* R0-59/15 * * * *", CronStringFormat.WithSeconds, new int[] { 0, 15, 30, 45 })]
+    [InlineData("* * R0-23/6 * * *", CronStringFormat.WithSeconds, new int[] { 0, 6, 12, 18 })]
+    [InlineData("R1-5/2 * * * * *", CronStringFormat.WithSeconds, new int[] { 1, 3, 5 })]
+    public void TestNextOccurrence_RandomStep(string expression, CronStringFormat format, int[] validValues)
+    {
+        var beginTime = new DateTime(2022, 1, 1, 0, 0, 0);
+        var crontab = Crontab.Parse(expression, format);
+        var next = crontab.GetNextOccurrence(beginTime);
+
+        int actualValue = GetRandomFieldValue(next, expression);
+        Assert.Contains(actualValue, validValues);
+        _testOutput.WriteLine($"Random step value: {actualValue}");
+    }
+
+    /// <summary>
+    /// 测试无效步长抛出异常
+    /// </summary>
+    [Theory]
+    [InlineData("R0-59/0 * * * * *", CronStringFormat.WithSeconds)]  // 步长为0
+    [InlineData("R0-59/-5 * * * * *", CronStringFormat.WithSeconds)] // 负数步长
+    [InlineData("R0-59/abc * * * * *", CronStringFormat.WithSeconds)] // 非数字步长
+    [InlineData("R5-1/2 * * * * *", CronStringFormat.WithSeconds)]   // min>max
+    public void TestInvalidRandomStepThrows(string expression, CronStringFormat format)
+    {
+        Assert.Throws<TimeCrontabException>(() => Crontab.Parse(expression, format));
+    }
+
+    /// <summary>
     /// 根据表达式判断 R 所在字段，并提取 DateTime 对应值
     /// </summary>
     private static int GetRandomFieldValue(DateTime dateTime, string expression)

@@ -218,6 +218,25 @@ var crontab = Crontab.Parse("* R1-5 * * * *", CronStringFormat.WithSeconds);
 var crontab = Crontab.Parse("* * R10-20 * * *", CronStringFormat.WithSeconds);
 ```
 
+`R` 还支持带步长的区间随机，格式为 `Rmin-max/step` 或 `R/step`，在给定的区间内按步长筛选候选值后随机选取。
+
+```cs
+// 秒数在 0~59 之间，每 5 秒随机一个值（0,5,10,...,55）
+var crontab = Crontab.Parse("R0-59/5 * * * * *", CronStringFormat.WithSeconds);
+
+// 分钟在 0~59 之间，每 10 分钟随机一个值（0,10,20,30,40,50）
+var crontab = Crontab.Parse("* R0-59/10 * * * *", CronStringFormat.WithSeconds);
+
+// 小时在 0~23 之间，每 6 小时随机一个值（0,6,12,18）
+var crontab = Crontab.Parse("* * R0-23/6 * * *", CronStringFormat.WithSeconds);
+
+// 秒数在 1~5 之间，步长为 2（1,3,5）
+var crontab = Crontab.Parse("R1-5/2 * * * * *", CronStringFormat.WithSeconds);
+
+// 全范围带步长：秒每 10 秒随机一个值（0,10,20,30,40,50）
+var crontab = Crontab.Parse("R/10 * * * * *", CronStringFormat.WithSeconds);
+```
+
 [更多文档](https://furion.net/docs/cron)
 
 ## 文档
@@ -396,6 +415,44 @@ public class TimeCrontabUnitTests
     [InlineData("* * R0-60 * * *", CronStringFormat.WithSeconds)]
     [InlineData("Rabc-def * * * * *", CronStringFormat.WithSeconds)]
     public void TestInvalidRandomRangeThrows(string expression, CronStringFormat format)
+    {
+        Assert.Throws<TimeCrontabException>(() => Crontab.Parse(expression, format));
+    }
+
+    [Theory]
+    [InlineData("R0-59/5 * * * * *", "R0-59/5 * * * * *", CronStringFormat.WithSeconds)]
+    [InlineData("* R0-59/10 * * * *", "* R0-59/10 * * * *", CronStringFormat.WithSeconds)]
+    [InlineData("* * R0-23/2 * * *", "* * R0-23/2 * * *", CronStringFormat.WithSeconds)]
+    [InlineData("R1-5/2 * * * * *", "R1-5/2 * * * * *", CronStringFormat.WithSeconds)]
+    [InlineData("R1-5/1 * * * * *", "R1-5/1 * * * * *", CronStringFormat.WithSeconds)]
+    public void TestParse_RandomStep(string expression, string outputString, CronStringFormat format)
+    {
+        var output = Crontab.Parse(expression, format).ToString();
+        Assert.Equal(outputString, output);
+    }
+
+    [Theory]
+    [InlineData("R0-59/10 * * * * *", CronStringFormat.WithSeconds, new int[] { 0, 10, 20, 30, 40, 50 })]
+    [InlineData("* R0-59/15 * * * *", CronStringFormat.WithSeconds, new int[] { 0, 15, 30, 45 })]
+    [InlineData("* * R0-23/6 * * *", CronStringFormat.WithSeconds, new int[] { 0, 6, 12, 18 })]
+    [InlineData("R1-5/2 * * * * *", CronStringFormat.WithSeconds, new int[] { 1, 3, 5 })]
+    public void TestNextOccurrence_RandomStep(string expression, CronStringFormat format, int[] validValues)
+    {
+        var beginTime = new DateTime(2022, 1, 1, 0, 0, 0);
+        var crontab = Crontab.Parse(expression, format);
+        var next = crontab.GetNextOccurrence(beginTime);
+
+        int actualValue = GetRandomFieldValue(next, expression);
+        Assert.Contains(actualValue, validValues);
+        _testOutput.WriteLine($"Random step value: {actualValue}");
+    }
+
+    [Theory]
+    [InlineData("R0-59/0 * * * * *", CronStringFormat.WithSeconds)]
+    [InlineData("R0-59/-5 * * * * *", CronStringFormat.WithSeconds)]
+    [InlineData("R0-59/abc * * * * *", CronStringFormat.WithSeconds)]
+    [InlineData("R5-1/2 * * * * *", CronStringFormat.WithSeconds)]
+    public void TestInvalidRandomStepThrows(string expression, CronStringFormat format)
     {
         Assert.Throws<TimeCrontabException>(() => Crontab.Parse(expression, format));
     }

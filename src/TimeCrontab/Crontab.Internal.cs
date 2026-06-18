@@ -168,30 +168,81 @@ public sealed partial class Crontab
                 }
             }
 
-            // 判断值是否以 R 开头（支持全范围 R 或区间 Rmin-max）
+            // 判断值是否以 R 开头（支持全范围、区间、带步长）
             if (newParser.StartsWith("R"))
             {
                 var remaining = newParser.Substring(1);
 
-                // 全范围随机 R
+                // 纯 "R"，全范围随机
                 if (string.IsNullOrEmpty(remaining))
                 {
+                    // 创建 RandomParser 解析器
                     return new RandomParser(kind);
                 }
 
-                // 尝试解析区间 Rmin-max（例如 R30-60）
+                int? step = null;
+
+                // 包含 "-" 说明是区间形式 Rmin-max 或 Rmin-max/step
                 if (remaining.Contains("-"))
                 {
-                    var parts = remaining.Split('-');
-                    if (parts.Length == 2 &&
-                        int.TryParse(parts[0], out var minVal) &&
-                        int.TryParse(parts[1], out var maxVal))
-                    {
-                        return new RandomParser(kind, minVal, maxVal);
-                    }
-                }
+                    // 找到 "-" 的位置，分割出 min 和 后续部分（max 可能含有 /step）
+                    var dashIndex = remaining.IndexOf('-');
+                    var minPart = remaining.Substring(0, dashIndex);
+                    var afterMinus = remaining.Substring(dashIndex + 1);
 
-                throw new TimeCrontabException(string.Format("Invalid parser '{0}'.", parser));
+                    string maxPart;
+
+                    // 检查后续部分是否包含 "/"
+                    if (afterMinus.Contains("/"))
+                    {
+                        // Rmin-max/step，需要分别提取 max 和 step
+                        var slashIndex = afterMinus.IndexOf('/');
+                        maxPart = afterMinus.Substring(0, slashIndex);
+                        var stepPart = afterMinus.Substring(slashIndex + 1);
+
+                        // 步长必须是有效整数
+                        if (!int.TryParse(stepPart, out var stepVal))
+                        {
+                            throw new TimeCrontabException(string.Format("Invalid step value in parser '{0}'.", parser));
+                        }
+
+                        step = stepVal;
+                    }
+                    else
+                    {
+                        // Rmin-max，无步长
+                        maxPart = afterMinus;
+                    }
+
+                    // 解析 min 和 max，必须都是整数
+                    if (!int.TryParse(minPart, out var minValue) || !int.TryParse(maxPart, out var maxValue))
+                    {
+                        throw new TimeCrontabException(string.Format("Invalid parser '{0}'.", parser));
+                    }
+
+                    // 创建 RandomParser 解析器
+                    return new RandomParser(kind, minValue, maxValue, step);
+                }
+                // 以 "/" 开头说明是 R/step 形式，全范围带步长
+                else if (remaining.StartsWith("/"))
+                {
+                    var stepPart = remaining.Substring(1);
+                    if (!int.TryParse(stepPart, out var stepVal))
+                    {
+                        throw new TimeCrontabException(string.Format("Invalid step value in parser '{0}'.", parser));
+                    }
+
+                    // 创建 RandomParser 解析器
+                    return new RandomParser(kind,
+                        Constants.MinimumDateTimeValues[kind],
+                        Constants.MaximumDateTimeValues[kind],
+                        stepVal);
+                }
+                else
+                {
+                    // 无法识别的 R 格式，如 "Rabc"
+                    throw new TimeCrontabException(string.Format("Invalid parser '{0}'.", parser));
+                }
             }
 
             // 判断值是否等于 ?
