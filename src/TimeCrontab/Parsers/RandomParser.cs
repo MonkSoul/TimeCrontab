@@ -272,13 +272,14 @@ internal sealed class RandomParser : ICronParser, ITimeParser
     }
 
     /// <summary>
-    /// 生成一个随机值
+    /// 生成一个完全随机的值
     /// </summary>
     /// <remarks>
+    /// 用于溢出重置时获取新随机值，或当需要全随机场景时使用。
     /// 如果存在候选集合（步长模式），则随机选择一个索引返回对应的值；
     /// 否则在 [_minValue, _maxValue] 区间内直接随机生成一个整数。
     /// </remarks>
-    /// <returns><see cref="string"/></returns>
+    /// <returns><see cref="int"/></returns>
     private int GetRandomValue()
     {
         if (_candidates != null)
@@ -290,5 +291,15 @@ internal sealed class RandomParser : ICronParser, ITimeParser
 
         // 区间内完全随机（含两端）
         return GetRandom().Next(_minValue, _maxValue + 1);
+    }
+
+    /// <summary>
+    /// 外部使用的全随机接口
+    /// </summary>
+    /// <remarks>实际调用 <see cref="GetRandomValue"/>。</remarks>
+    /// <returns><see cref="int"/></returns>
+    internal int GetNextRandom()
+    {
+        return GetRandomValue();
     }
 }

@@ -196,6 +196,54 @@ public sealed partial class Crontab
     }
 
     /// <summary>
+    /// 获取从起始时间开始指定数量的下一个发生时间
+    /// </summary>
+    /// <param name="baseTime">起始时间</param>
+    /// <param name="count">需要获取的发生时间数量（必须大于 0）</param>
+    /// <returns>包含指定数量下一次发生时间的集合</returns>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    public IEnumerable<DateTime> GetNextOccurrences(DateTime baseTime, int count)
+    {
+        // 检查数量是否大于 0
+        if (count < 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(count), "Count must be at least 1.");
+        }
+
+        var next = baseTime;
+
+        for (var i = 0; i < count; i++)
+        {
+            next = GetNextOccurrence(next);
+            yield return next;
+        }
+    }
+
+    /// <summary>
+    /// 获取从起始时间开始指定数量的上一个发生时间
+    /// </summary>
+    /// <param name="baseTime">起始时间</param>
+    /// <param name="count">需要获取的发生时间数量（必须大于 0）</param>
+    /// <returns>包含指定数量上一次发生时间的集合</returns>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    public IEnumerable<DateTime> GetPreviousOccurrences(DateTime baseTime, int count)
+    {
+        // 检查数量是否大于 0
+        if (count < 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(count), "Count must be at least 1.");
+        }
+
+        var previous = baseTime;
+
+        for (var i = 0; i < count; i++)
+        {
+            previous = GetPreviousOccurrence(previous);
+            yield return previous;
+        }
+    }
+
+    /// <summary>
     /// 计算距离下一个发生时间相差毫秒数
     /// </summary>
     /// <param name="baseTime">起始时间</param>

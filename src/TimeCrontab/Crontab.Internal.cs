@@ -565,6 +565,13 @@ public sealed partial class Crontab
                 overflow = true;
             }
 
+            // 如果秒溢出且秒字段为随机字段，需要立即重新随机秒值，确保进入下一分钟时秒值也是随机的
+            if (overflow && randomSecond)
+            {
+                newSeconds = GetRandomFieldValue(CrontabFieldKind.Second);
+                newValue = new DateTime(newValue.Year, newValue.Month, newValue.Day, newValue.Hour, newValue.Minute, newSeconds);
+            }
+
             // 如果程序到达这里，说明并没有进入上面分支，则直接返回下一秒时间
             if (!overflow)
             {
@@ -593,6 +600,13 @@ public sealed partial class Crontab
             overflow = true;
         }
 
+        // 如果分钟溢出且分钟字段为随机字段，需要立即重新随机分钟值，确保进入下一小时时分钟值也是随机的
+        if (overflow && randomMinute)
+        {
+            newMinutes = GetRandomFieldValue(CrontabFieldKind.Minute);
+            newValue = new DateTime(newValue.Year, newValue.Month, newValue.Day, newValue.Hour, newMinutes, newValue.Second);
+        }
+
         // 如果程序到达这里，说明并没有进入上面分支，则直接返回下一分钟时间
         if (!overflow)
         {
@@ -619,6 +633,13 @@ public sealed partial class Crontab
 
             // 标记进入下一轮循环
             overflow = true;
+        }
+
+        // 如果小时溢出且小时字段为随机字段，需要立即重新随机小时值，确保进入下一天时小时值也是随机的
+        if (overflow && randomHour)
+        {
+            newHours = GetRandomFieldValue(CrontabFieldKind.Hour);
+            newValue = new DateTime(newValue.Year, newValue.Month, newValue.Day, newHours, newValue.Minute, newValue.Second);
         }
 
         // 如果程序到达这里，说明并没有进入上面分支，则直接返回下一小时时间
@@ -756,6 +777,13 @@ public sealed partial class Crontab
                 overflow = true;
             }
 
+            // 如果秒溢出且秒字段为随机字段，需要立即重新随机秒值，确保进入上一分钟时秒值也是随机的
+            if (overflow && randomSecond)
+            {
+                newSeconds = GetRandomFieldValue(CrontabFieldKind.Second);
+                newValue = new DateTime(newValue.Year, newValue.Month, newValue.Day, newValue.Hour, newValue.Minute, newSeconds);
+            }
+
             // 如果程序到达这里，说明并没有进入上面分支，则直接返回上一秒时间
             if (!overflow)
             {
@@ -784,6 +812,13 @@ public sealed partial class Crontab
             overflow = true;
         }
 
+        // 如果分钟溢出且分钟字段为随机字段，需要立即重新随机分钟值，确保进入上一小时时分钟值也是随机的
+        if (overflow && randomMinute)
+        {
+            newMinutes = GetRandomFieldValue(CrontabFieldKind.Minute);
+            newValue = new DateTime(newValue.Year, newValue.Month, newValue.Day, newValue.Hour, newMinutes, newValue.Second);
+        }
+
         // 如果程序到达这里，说明并没有进入上面分支，则直接返回上一分钟时间
         if (!overflow)
         {
@@ -810,6 +845,13 @@ public sealed partial class Crontab
 
             // 标记进入下一轮循环
             overflow = true;
+        }
+
+        // 如果小时溢出且小时字段为随机字段，需要立即重新随机小时值，确保进入上一天时小时值也是随机的
+        if (overflow && randomHour)
+        {
+            newHours = GetRandomFieldValue(CrontabFieldKind.Hour);
+            newValue = new DateTime(newValue.Year, newValue.Month, newValue.Day, newHours, newValue.Minute, newValue.Second);
         }
 
         // 如果程序到达这里，说明并没有进入上面分支，则直接返回上一小时时间
@@ -888,17 +930,19 @@ public sealed partial class Crontab
         // 检查是否是随机 R 字符解析器
         if (parsers.Count == 1 && parsers.First() is RandomParser randomParser)
         {
-            var randomValue = randomParser.Next(value).Value;
+            // 获取区间最小值（或候选集最小值）
+            var minValue = randomParser.First();
 
-            // 若随机值大于当前值，则在同一字段内触发，不溢出
-            if (randomValue > value)
+            // 如果当前值小于最小值，说明本时间单位内尚未触发，可以留在本字段
+            if (value < minValue)
             {
+                // 返回一个完全随机的值（从完整区间或候选集随机），本时间单位只触发这一次
                 overflow = false;
-                return randomValue;
+                return randomParser.GetNextRandom();
             }
-            // 否则需要进位到下一字段，返回字段起始值（defaultValue）
             else
             {
+                // 否则本时间单位已经触发过，必须进位到下一时间单位
                 overflow = true;
                 return defaultValue;
             }
@@ -927,17 +971,19 @@ public sealed partial class Crontab
         // 检查是否是随机 R 字符解析器
         if (parsers.Count == 1 && parsers.First() is RandomParser randomParser)
         {
-            var randomValue = randomParser.Previous(value).Value;
+            // 获取区间最大值（或候选集最大值）
+            var maxValue = randomParser.Last();
 
-            // 若随机值小于当前值，则在同一字段内触发，不溢出
-            if (randomValue < value)
+            // 如果当前值大于最大值，说明本时间单位内尚未触发，可以留在本字段
+            if (value > maxValue)
             {
+                // 返回一个完全随机的值（从完整区间或候选集随机），本时间单位只触发这一次
                 overflow = false;
-                return randomValue;
+                return randomParser.GetNextRandom();
             }
-            // 否则需要退位到上一字段，返回字段末尾值（defaultValue）
             else
             {
+                // 否则本时间单位已经触发过，必须进位到上一时间单位
                 overflow = true;
                 return defaultValue;
             }
@@ -1030,6 +1076,6 @@ public sealed partial class Crontab
     {
         var randomParser = Parsers[kind].OfType<RandomParser>().FirstOrDefault();
 
-        return randomParser?.Next(0) ?? 0;
+        return randomParser?.GetNextRandom() ?? 0;
     }
 }

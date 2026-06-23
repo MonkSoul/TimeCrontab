@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Xunit;
 
 namespace TimeCrontab.UnitTests;
@@ -249,14 +250,84 @@ public class TimeCrontabUnitTests
         Assert.Throws<TimeCrontabException>(() => Crontab.Parse(expression, format));
     }
 
-    /// <summary>
-    /// 根据表达式判断 R 所在字段，并提取 DateTime 对应值
-    /// </summary>
+    [Theory]
+    [InlineData("* * * * *", CronStringFormat.Default, 5)]         // 每分钟
+    [InlineData("*/5 * * * *", CronStringFormat.Default, 10)]    // 每5分钟
+    [InlineData("0 0/1 * * * ?", CronStringFormat.WithSeconds, 3)] // 每分钟
+    public void TestGetNextOccurrencesCount(string expression, CronStringFormat format, int count)
+    {
+        var beginTime = new DateTime(2022, 1, 1, 0, 0, 0);
+        var crontab = Crontab.Parse(expression, format);
+        var occurrences = crontab.GetNextOccurrences(beginTime, count).ToList();
+
+        Assert.Equal(count, occurrences.Count);
+
+        for (int i = 0; i < occurrences.Count - 1; i++)
+        {
+            Assert.True(occurrences[i] < occurrences[i + 1]);
+        }
+
+        Assert.All(occurrences, dt => Assert.True(dt > beginTime));
+    }
+
+    [Theory]
+    [InlineData("* * * * *", CronStringFormat.Default, 5)]
+    [InlineData("*/5 * * * *", CronStringFormat.Default, 10)]
+    [InlineData("0 0/1 * * * ?", CronStringFormat.WithSeconds, 3)]
+    public void TestGetPreviousOccurrencesCount(string expression, CronStringFormat format, int count)
+    {
+        var beginTime = new DateTime(2022, 1, 1, 0, 0, 0);
+        var crontab = Crontab.Parse(expression, format);
+        var occurrences = crontab.GetPreviousOccurrences(beginTime, count).ToList();
+
+        Assert.Equal(count, occurrences.Count);
+
+        for (int i = 0; i < occurrences.Count - 1; i++)
+        {
+            Assert.True(occurrences[i] > occurrences[i + 1]);
+        }
+
+        Assert.All(occurrences, dt => Assert.True(dt < beginTime));
+    }
+
+    [Fact]
+    public void TestGetNextOccurrencesCountWithRandomExpression()
+    {
+        var beginTime = new DateTime(2022, 1, 1, 0, 0, 0);
+        var crontab = Crontab.Parse("R30-59 * * * * *", CronStringFormat.WithSeconds);
+        var occurrences = crontab.GetNextOccurrences(beginTime, 5).ToList();
+
+        Assert.Equal(5, occurrences.Count);
+        Assert.All(occurrences, dt => Assert.InRange(dt.Second, 30, 59));
+
+        for (int i = 0; i < 4; i++)
+        {
+            Assert.True(occurrences[i] < occurrences[i + 1]);
+        }
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void TestGetNextOccurrencesCountInvalidCount(int invalidCount)
+    {
+        var crontab = Crontab.Parse("* * * * *");
+        Assert.Throws<ArgumentOutOfRangeException>(() => crontab.GetNextOccurrences(DateTime.Now, invalidCount).ToList());
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void TestGetPreviousOccurrencesCountInvalidCount(int invalidCount)
+    {
+        var crontab = Crontab.Parse("* * * * *");
+        Assert.Throws<ArgumentOutOfRangeException>(() => crontab.GetPreviousOccurrences(DateTime.Now, invalidCount).ToList());
+    }
+
     private static int GetRandomFieldValue(DateTime dateTime, string expression)
     {
         var parts = expression.Split(' ');
 
-        // R 一定在表达式的前三个字段之一（秒、分、时）
         for (int i = 0; i < 3; i++)
         {
             if (parts[i].StartsWith("R"))

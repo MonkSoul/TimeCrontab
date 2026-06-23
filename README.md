@@ -33,52 +33,75 @@ dotnet add package TimeCrontab
 
 ## 快速入门
 
-我们在[主页](./samples)上有不少例子，这是让您入门的第一个：
+我们在[主页](./samples)上有不少例子，这是让您入门的第一个。
 
-**常规格式**：分 时 天 月 周
+### 解析 Cron 表达式
+
+`TimeCrontab` 支持四种 Cron 格式，通过 `CronStringFormat` 指定：
 
 ```cs
+// 常规格式：分 时 天 月 周
 var crontab = Crontab.Parse("* * * * *");
-var nextOccurrence = crontab.GetNextOccurrence(DateTime.Now);           // 下一个发生时间
-var previousOccurrence = crontab.GetPreviousOccurrence(DateTime.Now);   // 上一个发生时间
-```
 
-**支持年份**：分 时 天 月 周 年
-
-```cs
+// 支持年份：分 时 天 月 周 年
 var crontab = Crontab.Parse("* * * * * *", CronStringFormat.WithYears);
-var nextOccurrence = crontab.GetNextOccurrence(DateTime.Now);           // 下一个发生时间
-var previousOccurrence = crontab.GetPreviousOccurrence(DateTime.Now);   // 上一个发生时间
-```
 
-**支持秒数**：秒 分 时 天 月 周
-
-```cs
+// 支持秒数：秒 分 时 天 月 周
 var crontab = Crontab.Parse("* * * * * *", CronStringFormat.WithSeconds);
-var nextOccurrence = crontab.GetNextOccurrence(DateTime.Now);           // 下一个发生时间
-var previousOccurrence = crontab.GetPreviousOccurrence(DateTime.Now);   // 上一个发生时间
-```
 
-**支持秒和年**：秒 分 时 天 月 周 年
-
-```cs
+// 支持秒和年：秒 分 时 天 月 周 年
 var crontab = Crontab.Parse("* * * * * * *", CronStringFormat.WithSecondsAndYears);
-var nextOccurrence = crontab.GetNextOccurrence(DateTime.Now);           // 下一个发生时间
-var previousOccurrence = crontab.GetPreviousOccurrence(DateTime.Now);   // 上一个发生时间
 ```
 
-**获取休眠差实现简单定时任务**
+### 获取发生时间
+
+解析成功后，可通过以下方法获取下一个或上一个发生时间：
+
+#### 单个发生时间
 
 ```cs
-// 阻塞方式
+var next = crontab.GetNextOccurrence(DateTime.Now);           // 下一个发生时间
+var previous = crontab.GetPreviousOccurrence(DateTime.Now);   // 上一个发生时间
+```
+
+#### 指定时间范围内的所有发生时间
+
+```cs
+// 从现在开始，未来 30 分钟内的所有发生时间
+var nextOccurrences = crontab.GetNextOccurrences(DateTime.Now, DateTime.Now.AddMinutes(30));
+
+// 从现在开始，过去 30 分钟内的所有发生时间
+var previousOccurrences = crontab.GetPreviousOccurrences(DateTime.Now, DateTime.Now.AddMinutes(-30));
+```
+
+#### 指定数量的发生时间
+
+```cs
+// 接下来的 10 次发生时间
+var next10 = crontab.GetNextOccurrences(DateTime.Now, 10);
+
+// 之前的 10 次发生时间
+var previous10 = crontab.GetPreviousOccurrences(DateTime.Now, 10);
+```
+
+### 实现定时任务
+
+利用获取到的发生时间，可以轻松实现定时任务。
+
+#### 阻塞方式
+
+```cs
 var crontab = Crontab.Parse("* * * * *", CronStringFormat.Default);
 while(true)
 {
     Thread.Sleep(crontab.GetSleepTimeSpan(DateTime.Now));
     Console.WriteLine(DateTime.Now.ToString("G"));
 }
+```
 
-// 无阻塞方式
+#### 无阻塞方式
+
+```cs
 var crontab = Crontab.Parse("* * * * *", CronStringFormat.Default);
 Task.Factory.StartNew(async () =>
 {
@@ -90,7 +113,7 @@ Task.Factory.StartNew(async () =>
 }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 ```
 
-**`BackgroundService` 实现简单定时任务**
+#### 在 `BackgroundService` 中使用
 
 ```cs
 using TimeCrontab;
@@ -124,10 +147,12 @@ public class Worker : BackgroundService
 }
 ```
 
-**Macro 标识符**
+### Macro 标识符
+
+`TimeCrontab` 提供了一些内置的常用宏，方便快速创建常见的 Cron 表达式。
 
 ```cs
-// macro 字符串
+// 通过宏字符串解析
 var secondly = Crontab.Parse("@secondly");    // 每秒
 var minutely = Crontab.Parse("@minutely");    // 每分钟
 var hourly = Crontab.Parse("@hourly");    // 每小时
@@ -137,7 +162,7 @@ var weekly = Crontab.Parse("@weekly");    // 每周日 00：00：00
 var yearly = Crontab.Parse("@yearly");    // 每年 1 月 1 号 00:00:00
 var workday = Crontab.Parse("@workday");    // 每周一至周五 00:00:00
 
-// 静态属性
+// 通过静态属性直接获取
 var secondly = Crontab.Secondly;    // 每秒
 var minutely = Crontab.Minutely;    // 每分钟
 var hourly = Crontab.Hourly;    // 每小时
@@ -148,7 +173,9 @@ var yearly = Crontab.Yearly;    // 每年 1 月 1 号 00:00:00
 var workday = Crontab.Workday;    // 每周一至周五 00:00:00
 ```
 
-**Macro At 标识符**
+### Macro At 标识符
+
+允许在宏基础上指定具体的秒、分、时等值，进一步定制触发时间。
 
 ```cs
 // 每第 3 秒
@@ -196,7 +223,7 @@ var crontab = Crontab.YearlyAt("MAR", "MAY", "JUN");
 var crontab = Crontab.YearlyAt(3, "MAY", 6);
 ```
 
-**支持 `R` 随机时刻**
+### 支持 `R` 随机时刻
 
 `R` 是一个特殊的 `CRON` 表达式字符，允许您指定随机生成的时刻。例如，`R 0 0 * * ? *` 表示在每天 `00:00` 的随机秒数 (`0-59`) 时刻引发触发器。`R R R 15W * ? *` 表示在每月 `15` 日的随机时刻（秒、分钟、小时）引发。如果 `15` 日为星期六，则会在星期五（即 `14` 日）引发触发器。如果 `15` 日为星期天，则会在星期一（即 `16` 日）引发触发器。[参考文献](https://help.eset.com/protect_admin/13.0/zh-CN/cron_expression.html)
 
@@ -455,6 +482,80 @@ public class TimeCrontabUnitTests
     public void TestInvalidRandomStepThrows(string expression, CronStringFormat format)
     {
         Assert.Throws<TimeCrontabException>(() => Crontab.Parse(expression, format));
+    }
+
+    [Theory]
+    [InlineData("* * * * *", CronStringFormat.Default, 5)]
+    [InlineData("*/5 * * * *", CronStringFormat.Default, 10)]
+    [InlineData("0 0/1 * * * ?", CronStringFormat.WithSeconds, 3)]
+    public void TestGetNextOccurrencesCount(string expression, CronStringFormat format, int count)
+    {
+        var beginTime = new DateTime(2022, 1, 1, 0, 0, 0);
+        var crontab = Crontab.Parse(expression, format);
+        var occurrences = crontab.GetNextOccurrences(beginTime, count).ToList();
+
+        Assert.Equal(count, occurrences.Count);
+
+        for (int i = 0; i < occurrences.Count - 1; i++)
+        {
+            Assert.True(occurrences[i] < occurrences[i + 1]);
+        }
+
+        Assert.All(occurrences, dt => Assert.True(dt > beginTime));
+    }
+
+    [Theory]
+    [InlineData("* * * * *", CronStringFormat.Default, 5)]
+    [InlineData("*/5 * * * *", CronStringFormat.Default, 10)]
+    [InlineData("0 0/1 * * * ?", CronStringFormat.WithSeconds, 3)]
+    public void TestGetPreviousOccurrencesCount(string expression, CronStringFormat format, int count)
+    {
+        var beginTime = new DateTime(2022, 1, 1, 0, 0, 0);
+        var crontab = Crontab.Parse(expression, format);
+        var occurrences = crontab.GetPreviousOccurrences(beginTime, count).ToList();
+
+        Assert.Equal(count, occurrences.Count);
+
+        for (int i = 0; i < occurrences.Count - 1; i++)
+        {
+            Assert.True(occurrences[i] > occurrences[i + 1]);
+        }
+
+        Assert.All(occurrences, dt => Assert.True(dt < beginTime));
+    }
+
+    [Fact]
+    public void TestGetNextOccurrencesCountWithRandomExpression()
+    {
+        var beginTime = new DateTime(2022, 1, 1, 0, 0, 0);
+        var crontab = Crontab.Parse("R30-59 * * * * *", CronStringFormat.WithSeconds);
+        var occurrences = crontab.GetNextOccurrences(beginTime, 5).ToList();
+
+        Assert.Equal(5, occurrences.Count);
+        Assert.All(occurrences, dt => Assert.InRange(dt.Second, 30, 59));
+
+        for (int i = 0; i < 4; i++)
+        {
+            Assert.True(occurrences[i] < occurrences[i + 1]);
+        }
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void TestGetNextOccurrencesCountInvalidCount(int invalidCount)
+    {
+        var crontab = Crontab.Parse("* * * * *");
+        Assert.Throws<ArgumentOutOfRangeException>(() => crontab.GetNextOccurrences(DateTime.Now, invalidCount).ToList());
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void TestGetPreviousOccurrencesCountInvalidCount(int invalidCount)
+    {
+        var crontab = Crontab.Parse("* * * * *");
+        Assert.Throws<ArgumentOutOfRangeException>(() => crontab.GetPreviousOccurrences(DateTime.Now, invalidCount).ToList());
     }
 
     private static int GetRandomFieldValue(DateTime dateTime, string expression)
