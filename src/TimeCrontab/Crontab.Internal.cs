@@ -554,7 +554,8 @@ public sealed partial class Crontab
             if (!overflow && !IsMatch(newValue))
             {
                 // 重置秒为起始值并标记 overflow 为 true 进入新一轮循环
-                newSeconds = firstSecondValue;
+                // 若秒字段为随机字段，则重新生成随机值，避免固定值导致的单一分布
+                newSeconds = randomSecond ? GetRandomFieldValue(CrontabFieldKind.Second) : firstSecondValue;
 
                 // 此时计算时间秒部分应该为起始值
                 // 如 22:10:59 -> 22:10:00
@@ -581,12 +582,12 @@ public sealed partial class Crontab
         if (!overflow && !IsMatch(newValue))
         {
             // 重置秒，分钟为起始值并标记 overflow 为 true 进入新一轮循环
-            newSeconds = firstSecondValue;
-            newMinutes = firstMinuteValue;
+            newSeconds = randomSecond ? GetRandomFieldValue(CrontabFieldKind.Second) : firstSecondValue;
+            newMinutes = randomMinute ? GetRandomFieldValue(CrontabFieldKind.Minute) : firstMinuteValue;
 
             // 此时计算时间秒和分钟部分应该为起始值
             // 如 22:59:59 -> 22:00:00
-            newValue = new DateTime(newValue.Year, newValue.Month, newValue.Day, newValue.Hour, newMinutes, firstSecondValue);
+            newValue = new DateTime(newValue.Year, newValue.Month, newValue.Day, newValue.Hour, newMinutes, newSeconds);
 
             // 标记进入下一轮循环
             overflow = true;
@@ -603,15 +604,18 @@ public sealed partial class Crontab
 
         // 设置起始时间为下一个小时时间
         newValue = new DateTime(newValue.Year, newValue.Month, newValue.Day, newHours,
-            overflow && !randomMinute ? firstMinuteValue : newMinutes,
-            overflow && !randomSecond ? firstSecondValue : newSeconds);
+            overflow && !randomMinute ? firstMinuteValue : (randomMinute ? GetRandomFieldValue(CrontabFieldKind.Minute) : newMinutes),
+            overflow && !randomSecond ? firstSecondValue : (randomSecond ? GetRandomFieldValue(CrontabFieldKind.Second) : newSeconds));
 
         // 如果当前小时并没有进入下一轮循环但存在不匹配的字符过滤器
         if (!overflow && !IsMatch(newValue))
         {
             // 此时计算时间秒，分钟和小时部分应该为起始值
             // 如 23:59:59 -> 23:00:00
-            newValue = new DateTime(newValue.Year, newValue.Month, newValue.Day, firstHourValue, firstMinuteValue, firstSecondValue);
+            newValue = new DateTime(newValue.Year, newValue.Month, newValue.Day,
+                randomHour ? GetRandomFieldValue(CrontabFieldKind.Hour) : firstHourValue,
+                randomMinute ? GetRandomFieldValue(CrontabFieldKind.Minute) : firstMinuteValue,
+                randomSecond ? GetRandomFieldValue(CrontabFieldKind.Second) : firstSecondValue);
 
             // 标记进入下一轮循环
             overflow = true;
@@ -705,6 +709,8 @@ public sealed partial class Crontab
         // 获取分钟、小时所有字符解析器
         var minuteParsers = Parsers[CrontabFieldKind.Minute].Where(x => x is ITimeParser).Cast<ITimeParser>().ToList();
         var hourParsers = Parsers[CrontabFieldKind.Hour].Where(x => x is ITimeParser).Cast<ITimeParser>().ToList();
+        var randomMinute = minuteParsers.OfType<RandomParser>().Any();
+        var randomHour = hourParsers.OfType<RandomParser>().Any();
 
         // 获取秒、分钟、小时解析器中最小起始值
         // 该值主要用来获取上一个发生值的输入参数
@@ -712,7 +718,7 @@ public sealed partial class Crontab
         var lastMinuteValue = minuteParsers.Select(x => x.Last()).Max();
         var lastHourValue = hourParsers.Select(x => x.Last()).Max();
 
-        // 定义一个标识，标识当前时间山歌一个发生时间值是否进入新一轮循环
+        // 定义一个标识，标识当前时间上一个发生时间值是否进入新一轮循环
         // 如：如果当前时间的秒数为 00，那么上一个秒数应该为 59，那么当前时间分钟就应该 -1
         // 以此类推，如果 -1 后分钟数为 00，那么上一个分钟数也应该为 59，那么当前时间小时数就应该 -1
         // ....
@@ -724,6 +730,7 @@ public sealed partial class Crontab
         {
             // 获取秒所有字符解析器
             var secondParsers = Parsers[CrontabFieldKind.Second].Where(x => x is ITimeParser).Cast<ITimeParser>().ToList();
+            var randomSecond = secondParsers.OfType<RandomParser>().Any();
 
             // 获取秒解析器最大末尾值
             lastSecondValue = secondParsers.Select(x => x.Last()).Max();
@@ -738,7 +745,8 @@ public sealed partial class Crontab
             if (!overflow && !IsMatch(newValue))
             {
                 // 重置秒为起始值并标记 overflow 为 true 进入新一轮循环
-                newSeconds = lastSecondValue;
+                // 若秒字段为随机字段，则重新生成随机值，避免固定值导致的单一分布
+                newSeconds = randomSecond ? GetRandomFieldValue(CrontabFieldKind.Second) : lastSecondValue;
 
                 // 此时计算时间秒部分应该为末尾值
                 // 如 22:10:00 -> 22:09:59
@@ -765,12 +773,12 @@ public sealed partial class Crontab
         if (!overflow && !IsMatch(newValue))
         {
             // 重置秒，分钟为起始值并标记 overflow 为 true 进入新一轮循环
-            newSeconds = lastSecondValue;
-            newMinutes = lastMinuteValue;
+            newSeconds = isSecondFormat && Parsers[CrontabFieldKind.Second].Any(p => p is RandomParser) ? GetRandomFieldValue(CrontabFieldKind.Second) : lastSecondValue;
+            newMinutes = randomMinute ? GetRandomFieldValue(CrontabFieldKind.Minute) : lastMinuteValue;
 
             // 此时计算时间秒和分钟部分应该为起始值
             // 如 22:00:00 -> 21:59:59
-            newValue = new DateTime(newValue.Year, newValue.Month, newValue.Day, newValue.Hour, newMinutes, lastSecondValue);
+            newValue = new DateTime(newValue.Year, newValue.Month, newValue.Day, newValue.Hour, newMinutes, newSeconds);
 
             // 标记进入下一轮循环
             overflow = true;
@@ -782,26 +790,29 @@ public sealed partial class Crontab
             return MaxDate(newValue, endTime);
         }
 
-        // 程序到达这里，说明分钟部分已经标识进入新一轮循环，那么分支就应该获取下一个小时发生值 =================================================================
+        // 程序到达这里，说明分钟部分已经标识进入新一轮循环，那么分支就应该获取上一个小时发生值 =================================================================
         var newHours = Decrement(hourParsers, newValue.Hour + (overflow ? 0 : 1), lastHourValue, out overflow);
 
         // 设置起始时间为上一个小时时间
         newValue = new DateTime(newValue.Year, newValue.Month, newValue.Day, newHours,
-            overflow ? lastMinuteValue : newMinutes,
-            overflow ? lastSecondValue : newSeconds);
+            overflow ? (randomMinute ? GetRandomFieldValue(CrontabFieldKind.Minute) : lastMinuteValue) : newMinutes,
+            overflow ? (isSecondFormat && Parsers[CrontabFieldKind.Second].Any(p => p is RandomParser) ? GetRandomFieldValue(CrontabFieldKind.Second) : lastSecondValue) : newSeconds);
 
         // 如果当前小时并没有进入下一轮循环但存在不匹配的字符过滤器
         if (!overflow && !IsMatch(newValue))
         {
             // 此时计算时间秒，分钟和小时部分应该为末尾值
             // 如 24:00:00 -> 23:59:59
-            newValue = new DateTime(newValue.Year, newValue.Month, newValue.Day, lastHourValue, lastMinuteValue, lastSecondValue);
+            newValue = new DateTime(newValue.Year, newValue.Month, newValue.Day,
+                randomHour ? GetRandomFieldValue(CrontabFieldKind.Hour) : lastHourValue,
+                randomMinute ? GetRandomFieldValue(CrontabFieldKind.Minute) : lastMinuteValue,
+                isSecondFormat && Parsers[CrontabFieldKind.Second].Any(p => p is RandomParser) ? GetRandomFieldValue(CrontabFieldKind.Second) : lastSecondValue);
 
             // 标记进入下一轮循环
             overflow = true;
         }
 
-        // 如果程序到达这里，说明并没有进入上面分支，则直接返回下一小时时间
+        // 如果程序到达这里，说明并没有进入上面分支，则直接返回上一小时时间
         if (!overflow)
         {
             return MaxDate(newValue, endTime);
@@ -877,8 +888,20 @@ public sealed partial class Crontab
         // 检查是否是随机 R 字符解析器
         if (parsers.Count == 1 && parsers.First() is RandomParser randomParser)
         {
-            overflow = true;
-            return randomParser.Next(value).Value;
+            var randomValue = randomParser.Next(value).Value;
+
+            // 若随机值大于当前值，则在同一字段内触发，不溢出
+            if (randomValue > value)
+            {
+                overflow = false;
+                return randomValue;
+            }
+            // 否则需要进位到下一字段，返回字段起始值（defaultValue）
+            else
+            {
+                overflow = true;
+                return defaultValue;
+            }
         }
 
         var nextValue = parsers.Select(x => x.Next(value))
@@ -901,6 +924,25 @@ public sealed partial class Crontab
     /// <returns><see cref="int"/></returns>
     private int Decrement(List<ITimeParser> parsers, int value, int defaultValue, out bool overflow)
     {
+        // 检查是否是随机 R 字符解析器
+        if (parsers.Count == 1 && parsers.First() is RandomParser randomParser)
+        {
+            var randomValue = randomParser.Previous(value).Value;
+
+            // 若随机值小于当前值，则在同一字段内触发，不溢出
+            if (randomValue < value)
+            {
+                overflow = false;
+                return randomValue;
+            }
+            // 否则需要退位到上一字段，返回字段末尾值（defaultValue）
+            else
+            {
+                overflow = true;
+                return defaultValue;
+            }
+        }
+
         var previousValue = parsers.Select(x => x.Previous(value))
             .Where(x => x < value)
             .Max()
@@ -973,5 +1015,21 @@ public sealed partial class Crontab
                 .SelectMany(x => x.Value.Select(y => y.ToString())).ToArray()
             )
         );
+    }
+
+    /// <summary>
+    /// 获取指定随机字段的一个新随机值
+    /// </summary>
+    /// <remarks>
+    /// 当溢出重置字段时，若该字段为随机字段，则调用此方法重新获取一个随机值，
+    /// 确保每次重置都能得到真正的随机分布，而非始终使用固定边界值。
+    /// </remarks>
+    /// <param name="kind">Cron 字段种类</param>
+    /// <returns><see cref="int"/></returns>
+    private int GetRandomFieldValue(CrontabFieldKind kind)
+    {
+        var randomParser = Parsers[kind].OfType<RandomParser>().FirstOrDefault();
+
+        return randomParser?.Next(0) ?? 0;
     }
 }

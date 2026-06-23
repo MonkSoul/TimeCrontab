@@ -177,15 +177,32 @@ internal sealed class RandomParser : ICronParser, ITimeParser
     /// <summary>
     /// 判断当前时间是否符合 Cron 字段种类解析规则
     /// </summary>
-    /// <remarks>
-    /// <para>由于 R 字段的值是在运行时动态生成的，固定的时间值无法匹配，因此总是返回 false。</para>
-    /// <para>实际调度由 <see cref="Crontab.InternalGetNextOccurence"/> 中的特判逻辑处理。</para>
-    /// </remarks>
     /// <param name="datetime">当前时间</param>
     /// <returns><see cref="bool"/></returns>
     public bool IsMatch(DateTime datetime)
     {
-        return false;
+        // 获取当前时间在该字段上的值
+        var currentValue = Kind switch
+        {
+            CrontabFieldKind.Second => datetime.Second,
+            CrontabFieldKind.Minute => datetime.Minute,
+            CrontabFieldKind.Hour => datetime.Hour,
+            _ => throw new InvalidOperationException("RandomParser can only be used for Second, Minute or Hour fields.")
+        };
+
+        // 检查值是否在随机范围内
+        if (currentValue < _minValue || currentValue > _maxValue)
+        {
+            return false;
+        }
+
+        // 如果有步长候选集，还需检查是否属于候选值
+        if (_candidates != null)
+        {
+            return _candidates.Contains(currentValue);
+        }
+
+        return true;
     }
 
     /// <summary>
