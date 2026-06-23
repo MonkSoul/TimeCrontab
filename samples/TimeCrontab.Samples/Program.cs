@@ -1,7 +1,12 @@
 ﻿using TimeCrontab;
 
+var now = DateTime.Now;
+Console.WriteLine("当前时间：" + now.ToString());
+
+Console.WriteLine("--------------------------------------------------");
+
 var crontab = Crontab.Parse("R30-59 * * * * *", CronStringFormat.WithSeconds);
-var nextOccurrences = crontab.GetNextOccurrences(DateTime.Now, DateTime.Now.AddMinutes(5)).ToList();
+var nextOccurrences = crontab.GetNextOccurrences(now, now.AddMinutes(5)).ToList();
 
 foreach (var occurrence in nextOccurrences)
 {
@@ -11,7 +16,7 @@ foreach (var occurrence in nextOccurrences)
 Console.WriteLine("--------------------------------------------------");
 
 var crontab2 = Crontab.Parse("* R10-20 * * * *", CronStringFormat.WithSeconds);
-var nextOccurrences2 = crontab2.GetNextOccurrences(DateTime.Now, DateTime.Now.AddHours(1)).ToList();
+var nextOccurrences2 = crontab2.GetNextOccurrences(now, now.AddHours(1)).ToList();
 
 foreach (var occurrence in nextOccurrences2)
 {
@@ -19,7 +24,7 @@ foreach (var occurrence in nextOccurrences2)
 }
 
 var crontab3 = Crontab.Parse("R0-59/5 * * * * *", CronStringFormat.WithSeconds);
-var nextOccurrences3 = crontab3.GetNextOccurrences(DateTime.Now, DateTime.Now.AddMinutes(5)).ToList();
+var nextOccurrences3 = crontab3.GetNextOccurrences(now, now.AddMinutes(5)).ToList();
 
 Console.WriteLine("--------------------------------------------------");
 
@@ -29,11 +34,21 @@ foreach (var occurrence in nextOccurrences3)
 }
 
 var crontab4 = Crontab.Parse("R30-59 * * * * *", CronStringFormat.WithSeconds);
-var nextOccurrences4 = crontab4.GetNextOccurrences(DateTime.Now, 10).ToList();
+var nextOccurrences4 = crontab4.GetNextOccurrences(now, 10).ToList();
 
 Console.WriteLine("--------------------------------------------------");
 
 foreach (var occurrence in nextOccurrences4)
+{
+    Console.WriteLine(occurrence);
+}
+
+var crontab5 = Crontab.Parse("R1,5,10,12 * * * * *", CronStringFormat.WithSeconds);
+var nextOccurrences5 = crontab5.GetNextOccurrences(now, 10).ToList();
+
+Console.WriteLine("--------------------------------------------------");
+
+foreach (var occurrence in nextOccurrences5)
 {
     Console.WriteLine(occurrence);
 }

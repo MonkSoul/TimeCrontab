@@ -15,6 +15,7 @@ namespace TimeCrontab;
 /// <para>R 表示随机生成的时刻，仅在 <see cref="CrontabFieldKind.Second"/>、<see cref="CrontabFieldKind.Minute"/> 或 <see cref="CrontabFieldKind.Hour"/> 字段域中使用。</para>
 /// <para>支持区间随机：Rmin-max，例如 R30-59 表示在 30 到 59 之间随机。</para>
 /// <para>支持带步长的区间随机：Rmin-max/step，例如 R1-5/2 表示在 1,3,5 中随机。</para>
+/// <para>支持离散值随机：R1,5,10,12 表示在 1、5、10、12 中随机。</para>
 /// <para>参考文献：https://help.eset.com/protect_admin/13.0/zh-CN/cron_expression.html。</para>
 /// </remarks>
 internal sealed class RandomParser : ICronParser, ITimeParser
@@ -51,8 +52,8 @@ internal sealed class RandomParser : ICronParser, ITimeParser
     /// 候选值集合
     /// </summary>
     /// <remarks>
-    /// 当指定步长时，该集合预先存储所有满足步长条件的值（例如 R1-10/3 会生成 {1,4,7,10}）。
-    /// 若无步长，则为 null，表示区间内任意值随机。
+    /// 当指定步长或离散值时，该集合预先存储所有允许的值；
+    /// 若无步长且非离散值，则为 null，表示区间内任意值随机。
     /// </remarks>
     private readonly List<int> _candidates;
 
@@ -71,6 +72,11 @@ internal sealed class RandomParser : ICronParser, ITimeParser
     /// </summary>
     /// <remarks>可为 null，表示无步长限制，此时直接从整个区间随机。</remarks>
     private readonly int? _step;
+
+    /// <summary>
+    /// 是否为离散值模式（如 R1,5,10）
+    /// </summary>
+    private readonly bool _isDiscrete;
 
     /// <summary>
     /// 构造函数
@@ -145,6 +151,7 @@ internal sealed class RandomParser : ICronParser, ITimeParser
         _minValue = minValue;
         _maxValue = maxValue;
         _step = step;
+        _isDiscrete = false;
 
         // 如果提供了步长，则预先生成所有符合步长条件的候选值
         // 生成规则：从 minValue 开始，每次增加 step，直到超过 maxValue
@@ -170,6 +177,49 @@ internal sealed class RandomParser : ICronParser, ITimeParser
     }
 
     /// <summary>
+    /// 构造函数
+    /// </summary>
+    /// <param name="kind">Cron 字段种类</param>
+    /// <param name="values">允许的离散值集合，不允许为空</param>
+    /// <exception cref="TimeCrontabException"></exception>
+    public RandomParser(CrontabFieldKind kind, IEnumerable<int> values)
+    {
+        // 验证 R 字符是否在 Second、Minute 或 Hour 字段域中使用
+        if (kind != CrontabFieldKind.Second &&
+            kind != CrontabFieldKind.Minute &&
+            kind != CrontabFieldKind.Hour)
+        {
+            throw new TimeCrontabException("The <R> parser can only be used with the Second, Minute, or Hour fields.");
+        }
+
+        // 去重并排序，确保后续输出时顺序一致
+        var valueList = values?.Distinct().OrderBy(v => v).ToList();
+        if (valueList == null || valueList.Count == 0)
+        {
+            throw new TimeCrontabException("Discrete random values must not be empty.");
+        }
+
+        var fieldMin = Constants.MinimumDateTimeValues[kind];
+        var fieldMax = Constants.MaximumDateTimeValues[kind];
+
+        // 检查每个值是否在字段范围内
+        foreach (var val in valueList)
+        {
+            if (val < fieldMin || val > fieldMax)
+            {
+                throw new TimeCrontabException($"Value {val} is out of bounds for the {kind} field.");
+            }
+        }
+
+        Kind = kind;
+        _candidates = valueList;
+        _minValue = valueList.Min();
+        _maxValue = valueList.Max();
+        _step = null;
+        _isDiscrete = true;
+    }
+
+    /// <summary>
     /// Cron 字段种类
     /// </summary>
     public CrontabFieldKind Kind { get; }
@@ -190,19 +240,14 @@ internal sealed class RandomParser : ICronParser, ITimeParser
             _ => throw new InvalidOperationException("RandomParser can only be used for Second, Minute or Hour fields.")
         };
 
-        // 检查值是否在随机范围内
-        if (currentValue < _minValue || currentValue > _maxValue)
-        {
-            return false;
-        }
-
-        // 如果有步长候选集，还需检查是否属于候选值
+        // 如果有候选集（步长或离散），则检查是否在候选集中
         if (_candidates != null)
         {
             return _candidates.Contains(currentValue);
         }
 
-        return true;
+        // 否则检查是否在区间内
+        return currentValue >= _minValue && currentValue <= _maxValue;
     }
 
     /// <summary>
@@ -229,7 +274,7 @@ internal sealed class RandomParser : ICronParser, ITimeParser
     /// 获取 Cron 字段种类字段起始值
     /// </summary>
     /// <remarks>
-    /// 若存在步长，则返回候选集合中的最小值；否则返回区间最小值。
+    /// 若存在候选集，则返回候选集的最小值；否则返回区间最小值。
     /// 该值主要用于调度算法在需要回退到字段起始时使用。
     /// </remarks>
     /// <returns><see cref="int"/></returns>
@@ -242,7 +287,7 @@ internal sealed class RandomParser : ICronParser, ITimeParser
     /// 获取 Cron 字段种类字段末尾值
     /// </summary>
     /// <remarks>
-    /// 若存在步长，则返回候选集合中的最大值；否则返回区间最大值。
+    /// 若存在候选集，则返回候选集的最大值；否则返回区间最大值。
     /// 该值主要用于调度算法在需要前推到字段末尾时使用。
     /// </remarks>
     /// <returns><see cref="int"/></returns>
@@ -257,6 +302,12 @@ internal sealed class RandomParser : ICronParser, ITimeParser
     /// <returns><see cref="string"/></returns>
     public override string ToString()
     {
+        // 离散值模式：R1,5,10
+        if (_isDiscrete)
+        {
+            return "R" + string.Join(",", _candidates.Select(v => v.ToString()).ToArray());
+        }
+
         var fieldMin = Constants.MinimumDateTimeValues[Kind];
         var fieldMax = Constants.MaximumDateTimeValues[Kind];
 
@@ -276,7 +327,7 @@ internal sealed class RandomParser : ICronParser, ITimeParser
     /// </summary>
     /// <remarks>
     /// 用于溢出重置时获取新随机值，或当需要全随机场景时使用。
-    /// 如果存在候选集合（步长模式），则随机选择一个索引返回对应的值；
+    /// 如果存在候选集合（步长或离散），则随机选择一个索引返回对应的值；
     /// 否则在 [_minValue, _maxValue] 区间内直接随机生成一个整数。
     /// </remarks>
     /// <returns><see cref="int"/></returns>

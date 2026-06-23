@@ -85,10 +85,18 @@ public sealed partial class Crontab
         /*
          * 在 Cron 表达式中，单个字段域值也支持定义多个值（我们称为值中值），如 1,2,3 或 SUN,FRI,SAT
          * 所以，这里需要将字段域值通过 , 进行切割后独立处理
+         * 但特殊地，如果字段以 R 开头且包含逗号，说明是 R 的离散值模式（如 R1,5,10），应整体解析，不分割。
          */
 
         try
         {
+            // 处理离散值模式：以 R 开头且包含逗号，直接整体解析
+            if (field.Trim().StartsWith("R", StringComparison.OrdinalIgnoreCase) && field.Contains(","))
+            {
+                var parser = ParseParser(field, kind);
+                return new List<ICronParser> { parser };
+            }
+
             var parsers = field.Split(',').Select(parser => ParseParser(parser, kind)).ToList();
 
             // 禁止 R 字符与其他值在同一字段内混用（例如 R,30 或 R10-20,30 是非法的）
@@ -168,7 +176,7 @@ public sealed partial class Crontab
                 }
             }
 
-            // 判断值是否以 R 开头（支持全范围、区间、带步长）
+            // 判断值是否以 R 开头（支持全范围、区间、带步长、离散值）
             if (newParser.StartsWith("R"))
             {
                 var remaining = newParser.Substring(1);
@@ -178,6 +186,27 @@ public sealed partial class Crontab
                 {
                     // 创建 RandomParser 解析器
                     return new RandomParser(kind);
+                }
+
+                // 含有逗号，例如 R1,5,10
+                if (remaining.Contains(","))
+                {
+                    // 尝试使用逗号分割剩余部分
+                    var parts = remaining.Split(',');
+                    var values = new List<int>();
+
+                    foreach (var part in parts)
+                    {
+                        // 尝试将每个部分解析为整数值
+                        if (!int.TryParse(part, out var val))
+                        {
+                            throw new TimeCrontabException(string.Format("Invalid parser '{0}'.", parser));
+                        }
+
+                        values.Add(val);
+                    }
+
+                    return new RandomParser(kind, values);
                 }
 
                 int? step = null;

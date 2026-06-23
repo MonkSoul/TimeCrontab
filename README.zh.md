@@ -2,22 +2,22 @@
 
 [![license](https://img.shields.io/badge/license-MIT-orange?cacheSeconds=10800)](https://gitee.com/dotnetchina/TimeCrontab/blob/master/LICENSE) [![nuget](https://img.shields.io/nuget/v/TimeCrontab.svg?cacheSeconds=10800)](https://www.nuget.org/packages/TimeCrontab) [![dotNET China](https://img.shields.io/badge/organization-dotNET%20China-yellow?cacheSeconds=10800)](https://gitee.com/dotnetchina)
 
-A comprehensive .NET [Cron](http://crontab.org/) expression parsing library that supports all [Cron](http://crontab.org/) features.
+.NET 全能 [Cron](http://crontab.org/) 表达式解析库，支持 [Cron](http://crontab.org/) 所有特性。
 
 ![TimeCrontab.drawio](https://gitee.com/dotnetchina/TimeCrontab/raw/net6/drawio/TimeCrontab.drawio.png "TimeCrontab.drawio.png")
 
-## Features
+## 特性
 
-- Supports all [Cron](http://crontab.org/) features
-- High performance
-- Easy to extend
-- Very small, only `4KB`
-- No third-party dependencies
-- Cross-platform
-- High-quality code and good unit tests
-- Supports `.NET Framework 3.5+` and later versions
+- 支持 [Cron](http://crontab.org/) 所有特性
+- 超高性能
+- 易扩展
+- 很小，仅 `4KB`
+- 无第三方依赖
+- 跨平台
+- 高质量代码和良好单元测试
+- 支持 `.NET Framework 3.5+` 及后续版本
 
-## Installation
+## 安装
 
 - [Package Manager](https://www.nuget.org/packages/TimeCrontab)
 
@@ -31,64 +31,64 @@ Install-Package TimeCrontab
 dotnet add package TimeCrontab
 ```
 
-## Quick Start
+## 快速入门
 
-We have many examples on the [home page](./samples). Here is the first one to get you started.
+我们在[主页](./samples)上有不少例子，这是让您入门的第一个。
 
-### Parsing Cron Expressions
+### 解析 Cron 表达式
 
-`TimeCrontab` supports four Cron formats, specified via `CronStringFormat`:
+`TimeCrontab` 支持四种 Cron 格式，通过 `CronStringFormat` 指定：
 
 ```cs
-// Default format: Minute Hour Day Month DayOfWeek
+// 常规格式：分 时 天 月 周
 var crontab = Crontab.Parse("* * * * *");
 
-// With year: Minute Hour Day Month DayOfWeek Year
+// 支持年份：分 时 天 月 周 年
 var crontab = Crontab.Parse("* * * * * *", CronStringFormat.WithYears);
 
-// With seconds: Second Minute Hour Day Month DayOfWeek
+// 支持秒数：秒 分 时 天 月 周
 var crontab = Crontab.Parse("* * * * * *", CronStringFormat.WithSeconds);
 
-// With seconds and year: Second Minute Hour Day Month DayOfWeek Year
+// 支持秒和年：秒 分 时 天 月 周 年
 var crontab = Crontab.Parse("* * * * * * *", CronStringFormat.WithSecondsAndYears);
 ```
 
-### Getting Occurrence Times
+### 获取发生时间
 
-After parsing, you can get the next or previous occurrence time with the following methods:
+解析成功后，可通过以下方法获取下一个或上一个发生时间：
 
-#### Single Occurrence
+#### 单个发生时间
 
 ```cs
-var next = crontab.GetNextOccurrence(DateTime.Now);           // Next occurrence time
-var previous = crontab.GetPreviousOccurrence(DateTime.Now);   // Previous occurrence time
+var next = crontab.GetNextOccurrence(DateTime.Now);           // 下一个发生时间
+var previous = crontab.GetPreviousOccurrence(DateTime.Now);   // 上一个发生时间
 ```
 
-#### All Occurrences within a Time Range
+#### 指定时间范围内的所有发生时间
 
 ```cs
-// All occurrences in the next 30 minutes
+// 从现在开始，未来 30 分钟内的所有发生时间
 var nextOccurrences = crontab.GetNextOccurrences(DateTime.Now, DateTime.Now.AddMinutes(30));
 
-// All occurrences in the past 30 minutes
+// 从现在开始，过去 30 分钟内的所有发生时间
 var previousOccurrences = crontab.GetPreviousOccurrences(DateTime.Now, DateTime.Now.AddMinutes(-30));
 ```
 
-#### Specified Number of Occurrences
+#### 指定数量的发生时间
 
 ```cs
-// Next 10 occurrences
+// 接下来的 10 次发生时间
 var next10 = crontab.GetNextOccurrences(DateTime.Now, 10);
 
-// Previous 10 occurrences
+// 之前的 10 次发生时间
 var previous10 = crontab.GetPreviousOccurrences(DateTime.Now, 10);
 ```
 
-### Implementing Simple Scheduled Tasks
+### 实现定时任务
 
-You can easily implement scheduled tasks using the obtained occurrence times.
+利用获取到的发生时间，可以轻松实现定时任务。
 
-#### Blocking Approach
+#### 阻塞方式
 
 ```cs
 var crontab = Crontab.Parse("* * * * *", CronStringFormat.Default);
@@ -99,7 +99,7 @@ while(true)
 }
 ```
 
-#### Non-blocking Approach
+#### 无阻塞方式
 
 ```cs
 var crontab = Crontab.Parse("* * * * *", CronStringFormat.Default);
@@ -113,7 +113,7 @@ Task.Factory.StartNew(async () =>
 }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 ```
 
-#### Using `BackgroundService`
+#### 在 `BackgroundService` 中使用
 
 ```cs
 using TimeCrontab;
@@ -128,7 +128,7 @@ public class Worker : BackgroundService
     public Worker(ILogger<Worker> logger)
     {
         _logger = logger;
-        // Example: every minute (adjust the expression as needed)
+        // 示例：每分钟执行一次（可根据需要修改表达式）
         _crontab = Crontab.Parse("* * * * *", CronStringFormat.Default);
     }
 
@@ -136,154 +136,154 @@ public class Worker : BackgroundService
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            // Calculate the time to sleep until the next occurrence
+            // 计算距离下一次执行需要等待的时间
             var sleepTimeSpan = _crontab.GetSleepTimeSpan(DateTime.Now);
             await Task.Delay(sleepTimeSpan, stoppingToken);
 
-            // Execute your business logic here
+            // 执行业务逻辑（直接在此处编写或调用方法）
             _logger.LogInformation("Worker running at: {time}", DateTime.Now);
         }
     }
 }
 ```
 
-### Macro Identifiers
+### Macro 标识符
 
-`TimeCrontab` provides built-in macros for quickly creating common Cron expressions.
+`TimeCrontab` 提供了一些内置的常用宏，方便快速创建常见的 Cron 表达式。
 
 ```cs
-// Parse via macro strings
-var secondly = Crontab.Parse("@secondly");    // Every second
-var minutely = Crontab.Parse("@minutely");    // Every minute
-var hourly = Crontab.Parse("@hourly");    // Every hour
-var daily = Crontab.Parse("@daily");  // Every day at 00:00:00
-var monthly = Crontab.Parse("@monthly");  // Every 1st day of month at 00:00:00
-var weekly = Crontab.Parse("@weekly");    // Every Sunday at 00:00:00
-var yearly = Crontab.Parse("@yearly");    // Every 1st day of year at 00:00:00
-var workday = Crontab.Parse("@workday");    // Every Monday to Friday at 00:00:00
+// 通过宏字符串解析
+var secondly = Crontab.Parse("@secondly");    // 每秒
+var minutely = Crontab.Parse("@minutely");    // 每分钟
+var hourly = Crontab.Parse("@hourly");    // 每小时
+var daily = Crontab.Parse("@daily");  // 每天 00:00:00
+var monthly = Crontab.Parse("@monthly");  // 每月 1 号 00:00:00
+var weekly = Crontab.Parse("@weekly");    // 每周日 00：00：00
+var yearly = Crontab.Parse("@yearly");    // 每年 1 月 1 号 00:00:00
+var workday = Crontab.Parse("@workday");    // 每周一至周五 00:00:00
 
-// Static properties
-var secondly = Crontab.Secondly;    // Every second
-var minutely = Crontab.Minutely;    // Every minute
-var hourly = Crontab.Hourly;    // Every hour
-var daily = Crontab.Daily;  // Every day at 00:00:00
-var monthly = Crontab.Monthly;  // Every 1st day of month at 00:00:00
-var weekly = Crontab.Weekly;    // Every Sunday at 00:00:00
-var yearly = Crontab.Yearly;    // Every 1st day of year at 00:00:00
-var workday = Crontab.Workday;    // Every Monday to Friday at 00:00:00
+// 通过静态属性直接获取
+var secondly = Crontab.Secondly;    // 每秒
+var minutely = Crontab.Minutely;    // 每分钟
+var hourly = Crontab.Hourly;    // 每小时
+var daily = Crontab.Daily;  // 每天 00:00:00
+var monthly = Crontab.Monthly;  // 每月 1 号 00:00:00
+var weekly = Crontab.Weekly;    // 每周日 00：00：00
+var yearly = Crontab.Yearly;    // 每年 1 月 1 号 00:00:00
+var workday = Crontab.Workday;    // 每周一至周五 00:00:00
 ```
 
-### Macro At Identifiers
+### Macro At 标识符
 
-Allows specifying exact second, minute, hour etc. on top of macros.
+允许在宏基础上指定具体的秒、分、时等值，进一步定制触发时间。
 
 ```cs
-// Every 3rd second
+// 每第 3 秒
 var crontab = Crontab.SecondlyAt(3);
-// Every 3,5,6 seconds
+// 每第 3，5，6 秒
 var crontab = Crontab.SecondlyAt(3, 5, 6);
 
-// Every minute at the 3rd second
+// 每分钟第 3 秒
 var crontab = Crontab.MinutelyAt(3);
-// Every minute at the 3rd,5th,6th second
+// 每分钟第 3，5，6 秒
 var crontab = Crontab.MinutelyAt(3, 5, 6);
 
-// Every hour at the 3rd minute
+// 每小时第 3 分钟
 var crontab = Crontab.HourlyAt(3);
-// Every hour at the 3rd,5th,6th minute
+// 每小时第 3，5，6 分钟
 var crontab = Crontab.HourlyAt(3, 5, 6);
 
-// Every day at the 3rd hour
+// 每天第 3 小时正（点）
 var crontab = Crontab.DailyAt(3);
-// Every day at the 3rd,5th,6th hour
+// 每天第 3，5，6 小时正（点）
 var crontab = Crontab.DailyAt(3, 5, 6);
 
-// Every month on the 3rd day at midnight
+// 每月第 3 天零点正
 var crontab = Crontab.MonthlyAt(3);
-// Every month on the 3rd,5th,6th day at midnight
+// 每月第 3，5，6 天零点正
 var crontab = Crontab.MonthlyAt(3, 5, 6);
 
-// Every week on Wednesday at midnight
+// 每周星期 3 零点正
 var crontab = Crontab.WeeklyAt(3);
-var crontab = Crontab.WeeklyAt("WED");  // SUN, MON, TUE, WED, THU, FRI, SAT
-// Every week on Wednesday, Friday, Saturday at midnight
+var crontab = Crontab.WeeklyAt("WED");  // SUN（星期天），MON，TUE，WED，THU，FRI，SAT
+// 每周星期 3，5，6 零点正
 var crontab = Crontab.WeeklyAt(3, 5, 6);
 var crontab = Crontab.WeeklyAt("WED", "FRI", "SAT");
-// Mixed
+// 还支持混合
 var crontab = Crontab.WeeklyAt(3, "FRI", 6);
 
-// Every year in March at midnight
+// 每年第 3 月 1 日零点正
 var crontab = Crontab.YearlyAt(3);
-var crontab = Crontab.YearlyAt("MAR");  // JAN, FEB, MAR, APR, MAY, JUN, JUL, AUG, SEP, OCT, NOV, DEC
-// Every year in March, May, June at midnight
+var crontab = Crontab.YearlyAt("MAR");  // JAN（一月），FEB，MAR，APR，MAY，JUN，JUL，AUG，SEP，OCT，NOV，DEC
+// 每年第 3，5，6 月 1 日零点正
 var crontab = Crontab.YearlyAt(3);
 var crontab = Crontab.YearlyAt(3, 5, 6);
 var crontab = Crontab.YearlyAt("MAR", "MAY", "JUN");
-// Mixed
+// 还支持混合
 var crontab = Crontab.YearlyAt(3, "MAY", 6);
 ```
 
-### Supporting `R` Random Moment
+### 支持 `R` 随机时刻
 
-`R` is a special `CRON` expression character that allows you to specify a randomly generated moment. For example, `R 0 0 * * ? *` means triggering at a random second (0‑59) every day at 00:00. `R R R 15W * ? *` means triggering at a random moment (seconds, minutes, hours) on the 15th day of each month. If the 15th is a Saturday, it fires on Friday (the 14th); if it is a Sunday, it fires on Monday (the 16th). [Reference](https://help.eset.com/protect_admin/13.0/zh-CN/cron_expression.html)
+`R` 是一个特殊的 `CRON` 表达式字符，允许您指定随机生成的时刻。例如，`R 0 0 * * ? *` 表示在每天 `00:00` 的随机秒数 (`0-59`) 时刻引发触发器。`R R R 15W * ? *` 表示在每月 `15` 日的随机时刻（秒、分钟、小时）引发。如果 `15` 日为星期六，则会在星期五（即 `14` 日）引发触发器。如果 `15` 日为星期天，则会在星期一（即 `16` 日）引发触发器。[参考文献](https://help.eset.com/protect_admin/13.0/zh-CN/cron_expression.html)
 
 ```cs
-// Full-range random (seconds 0-59)
+// 全范围随机（秒 0-59）
 var crontab = Crontab.Parse("R 0 0 * * ? *", CronStringFormat.WithSecondsAndYears);
 ```
 
-`R` also supports specifying a random interval in the format `Rmin-max`. This is very useful for staggering a large number of scheduled tasks to avoid system pressure caused by simultaneous triggering.
+`R` 也支持指定随机区间，格式为 `Rmin-max`。这对于将大量定时任务错峰执行非常有用，可以避免同时触发造成系统压力。
 
 ```cs
-// Random seconds between 30~59
+// 秒数在 30~59 之间随机
 var crontab = Crontab.Parse("R30-59 * * * * *", CronStringFormat.WithSeconds);
 
-// Random minutes between 1~5
+// 分钟在 1~5 之间随机
 var crontab = Crontab.Parse("* R1-5 * * * *", CronStringFormat.WithSeconds);
 
-// Random hours between 10~20
+// 小时在 10~20 之间随机
 var crontab = Crontab.Parse("* * R10-20 * * *", CronStringFormat.WithSeconds);
 ```
 
-`R` also supports interval random with a step, in the formats `Rmin-max/step` or `R/step`. Candidates are filtered by the step within the given range, and one value is randomly selected.
+`R` 还支持带步长的区间随机，格式为 `Rmin-max/step` 或 `R/step`，在给定的区间内按步长筛选候选值后随机选取。
 
 ```cs
-// Every 5 seconds between 0~59 (0,5,10,...,55)
+// 秒数在 0~59 之间，每 5 秒随机一个值（0,5,10,...,55）
 var crontab = Crontab.Parse("R0-59/5 * * * * *", CronStringFormat.WithSeconds);
 
-// Every 10 minutes between 0~59 (0,10,20,30,40,50)
+// 分钟在 0~59 之间，每 10 分钟随机一个值（0,10,20,30,40,50）
 var crontab = Crontab.Parse("* R0-59/10 * * * *", CronStringFormat.WithSeconds);
 
-// Every 6 hours between 0~23 (0,6,12,18)
+// 小时在 0~23 之间，每 6 小时随机一个值（0,6,12,18）
 var crontab = Crontab.Parse("* * R0-23/6 * * *", CronStringFormat.WithSeconds);
 
-// Step 2 between 1~5 (1,3,5)
+// 秒数在 1~5 之间，步长为 2（1,3,5）
 var crontab = Crontab.Parse("R1-5/2 * * * * *", CronStringFormat.WithSeconds);
 
-// Full-range step: random every 10 seconds (0,10,20,30,40,50)
+// 全范围带步长：秒每 10 秒随机一个值（0,10,20,30,40,50）
 var crontab = Crontab.Parse("R/10 * * * * *", CronStringFormat.WithSeconds);
 ```
 
-`R` also supports discrete value random, in the format `Rvalue1,value2,value3`, which randomly selects from the specified values.
+`R` 还支持离散值随机，格式为 `Rvalue1,value2,value3`，在指定的几个值中随机选取。
 
 ```cs
-// Random seconds among 1,5,10,12
+// 秒在 1,5,10,12 之间随机
 var crontab = Crontab.Parse("R1,5,10,12 * * * * *", CronStringFormat.WithSeconds);
 
-// Random minutes among 0,15,30,45
+// 分钟在 0,15,30,45 之间随机
 var crontab = Crontab.Parse("* R0,15,30,45 * * * *", CronStringFormat.WithSeconds);
 
-// Random hours among 8,12,18
+// 小时在 8,12,18 之间随机
 var crontab = Crontab.Parse("* * R8,12,18 * * *", CronStringFormat.WithSeconds);
 ```
 
-[More Documentation](https://furion.net/docs/cron)
+[更多文档](https://furion.net/docs/cron)
 
-## Documentation
+## 文档
 
-You can find the TimeCrontab documentation on the [home page](https://furion.net/docs/cron).
+您可以在[主页](https://furion.net/docs/cron)找到 TimeCrontab 文档。
 
-## Tests
+## 测试
 
 ```cs
 public class TimeCrontabUnitTests
@@ -648,12 +648,12 @@ public class TimeCrontabUnitTests
 }
 ```
 
-## Contributing
+## 贡献
 
-The primary goal of this repository is to continue developing TimeCrontab, making it faster and easier to use. Development of TimeCrontab is publicly conducted on [Gitee](https://gitee.com/dotnetchina/TimeCrontab), and we appreciate community contributions for bug fixes and improvements.
+该存储库的主要目的是继续发展 TimeCrontab 核心，使其更快、更易于使用。TimeCrontab 的开发在 [Gitee](https://gitee.com/dotnetchina/TimeCrontab) 上公开进行，我们感谢社区贡献错误修复和改进。
 
-## License
+## 许可证
 
-TimeCrontab is released under the [MIT](./LICENSE) open source license.
+TimeCrontab 采用 [MIT](./LICENSE) 开源许可证。
 
 [![](./assets/baiqian.svg)](https://baiqian.com)
