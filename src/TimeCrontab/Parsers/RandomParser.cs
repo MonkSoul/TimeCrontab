@@ -9,14 +9,14 @@ using System.Linq;
 namespace TimeCrontab;
 
 /// <summary>
-/// Cron 字段值含 R 字符解析器
+/// Cron 字段值含 R 或 H 字符解析器
 /// </summary>
 /// <remarks>
-/// <para>R 表示随机生成的时刻，仅在 <see cref="CrontabFieldKind.Second"/>、<see cref="CrontabFieldKind.Minute"/> 或 <see cref="CrontabFieldKind.Hour"/> 字段域中使用。</para>
-/// <para>支持区间随机：R(min-max)，例如 R(30-59) 表示在 30 到 59 之间随机。</para>
-/// <para>支持带步长的区间随机：R(min-max)/step，例如 R(1-5)/2 表示在 1,3,5 中随机。</para>
-/// <para>支持全范围带步长随机：R/step，例如 R/5 表示在字段全范围内每 5 个值取一个随机。</para>
-/// <para>支持离散值随机：R(1,5,10,12) 表示在 1、5、10、12 中随机。</para>
+/// <para>R 或 H 表示随机生成的时刻，两者完全等价，仅在 <see cref="CrontabFieldKind.Second"/>、<see cref="CrontabFieldKind.Minute"/> 或 <see cref="CrontabFieldKind.Hour"/> 字段域中使用。</para>
+/// <para>支持区间随机：R(min-max) 或 H(min-max)，例如 R(30-59) 表示在 30 到 59 之间随机。</para>
+/// <para>支持带步长的区间随机：R(min-max)/step 或 H(min-max)/step，例如 R(1-5)/2 表示在 1,3,5 中随机。</para>
+/// <para>支持全范围带步长随机：R/step 或 H/step，例如 R/5 表示在字段全范围内每 5 个值取一个随机。</para>
+/// <para>支持离散值随机：R(1,5,10,12) 或 H(1,5,10,12) 表示在 1、5、10、12 中随机。</para>
 /// <para>参考文献：https://help.eset.com/protect_admin/13.0/zh-CN/cron_expression.html。</para>
 /// </remarks>
 internal sealed class RandomParser : ICronParser, ITimeParser
@@ -85,12 +85,18 @@ internal sealed class RandomParser : ICronParser, ITimeParser
     private readonly bool _useShortStepFormat;
 
     /// <summary>
+    /// 随机标识符前缀（R 或 H）
+    /// </summary>
+    private readonly char _prefix;
+
+    /// <summary>
     /// 构造函数
     /// </summary>
     /// <remarks>全范围随机。</remarks>
     /// <param name="kind">Cron 字段种类</param>
-    public RandomParser(CrontabFieldKind kind)
-        : this(kind, Constants.MinimumDateTimeValues[kind], Constants.MaximumDateTimeValues[kind], null)
+    /// <param name="prefix">随机标识符前缀，默认为 'R'</param>
+    public RandomParser(CrontabFieldKind kind, char prefix = 'R')
+        : this(kind, Constants.MinimumDateTimeValues[kind], Constants.MaximumDateTimeValues[kind], null, false, prefix)
     {
     }
 
@@ -101,8 +107,9 @@ internal sealed class RandomParser : ICronParser, ITimeParser
     /// <param name="kind">Cron 字段种类</param>
     /// <param name="minValue">最小值（包含）</param>
     /// <param name="maxValue">最大值（包含）</param>
-    public RandomParser(CrontabFieldKind kind, int minValue, int maxValue)
-        : this(kind, minValue, maxValue, null)
+    /// <param name="prefix">随机标识符前缀，默认为 'R'</param>
+    public RandomParser(CrontabFieldKind kind, int minValue, int maxValue, char prefix = 'R')
+        : this(kind, minValue, maxValue, null, false, prefix)
     {
     }
 
@@ -118,15 +125,16 @@ internal sealed class RandomParser : ICronParser, ITimeParser
     /// <param name="maxValue">最大值（包含）</param>
     /// <param name="step">步长，可为 null 表示无步长限制</param>
     /// <param name="useShortStepFormat">是否使用简洁步长格式 R/step，默认为 false（使用 R(min-max)/step）</param>
+    /// <param name="prefix">随机标识符前缀，默认为 'R'</param>
     /// <exception cref="TimeCrontabException"></exception>
-    public RandomParser(CrontabFieldKind kind, int minValue, int maxValue, int? step, bool useShortStepFormat = false)
+    public RandomParser(CrontabFieldKind kind, int minValue, int maxValue, int? step, bool useShortStepFormat = false, char prefix = 'R')
     {
-        // 验证 R 字符是否在 Second、Minute 或 Hour 字段域中使用
+        // 验证 R 或 H 字符是否在 Second、Minute 或 Hour 字段域中使用
         if (kind != CrontabFieldKind.Second &&
             kind != CrontabFieldKind.Minute &&
             kind != CrontabFieldKind.Hour)
         {
-            throw new TimeCrontabException("The <R> parser can only be used with the Second, Minute, or Hour fields.");
+            throw new TimeCrontabException("The <R> or <H> parser can only be used with the Second, Minute, or Hour fields.");
         }
 
         var fieldMin = Constants.MinimumDateTimeValues[kind];
@@ -160,6 +168,7 @@ internal sealed class RandomParser : ICronParser, ITimeParser
         _step = step;
         _isDiscrete = false;
         _useShortStepFormat = useShortStepFormat;
+        _prefix = prefix;
 
         // 如果提供了步长，则预先生成所有符合步长条件的候选值
         // 生成规则：从 minValue 开始，每次增加 step，直到超过 maxValue
@@ -189,15 +198,16 @@ internal sealed class RandomParser : ICronParser, ITimeParser
     /// </summary>
     /// <param name="kind">Cron 字段种类</param>
     /// <param name="values">允许的离散值集合，不允许为空</param>
+    /// <param name="prefix">随机标识符前缀，默认为 'R'</param>
     /// <exception cref="TimeCrontabException"></exception>
-    public RandomParser(CrontabFieldKind kind, IEnumerable<int> values)
+    public RandomParser(CrontabFieldKind kind, IEnumerable<int> values, char prefix = 'R')
     {
-        // 验证 R 字符是否在 Second、Minute 或 Hour 字段域中使用
+        // 验证 R 或 H 字符是否在 Second、Minute 或 Hour 字段域中使用
         if (kind != CrontabFieldKind.Second &&
             kind != CrontabFieldKind.Minute &&
             kind != CrontabFieldKind.Hour)
         {
-            throw new TimeCrontabException("The <R> parser can only be used with the Second, Minute, or Hour fields.");
+            throw new TimeCrontabException("The <R> or <H> parser can only be used with the Second, Minute, or Hour fields.");
         }
 
         // 去重并排序，确保后续输出时顺序一致
@@ -226,6 +236,7 @@ internal sealed class RandomParser : ICronParser, ITimeParser
         _step = null;
         _isDiscrete = true;
         _useShortStepFormat = false;
+        _prefix = prefix;
     }
 
     /// <summary>
@@ -311,10 +322,10 @@ internal sealed class RandomParser : ICronParser, ITimeParser
     /// <returns><see cref="string"/></returns>
     public override string ToString()
     {
-        // 离散值模式：R(1,5,10)
+        // 离散值模式：R(1,5,10) 或 H(1,5,10)
         if (_isDiscrete)
         {
-            return "R(" + string.Join(",", _candidates.Select(v => v.ToString()).ToArray()) + ")";
+            return _prefix + "(" + string.Join(",", _candidates.Select(v => v.ToString()).ToArray()) + ")";
         }
 
         var fieldMin = Constants.MinimumDateTimeValues[Kind];
@@ -323,20 +334,20 @@ internal sealed class RandomParser : ICronParser, ITimeParser
         // 无步长情况
         if (!_step.HasValue)
         {
-            // 如果区间等于字段全范围，简化为 "R"；否则输出 "R(min-max)"
-            return (_minValue == fieldMin && _maxValue == fieldMax) ? "R" : $"R({_minValue}-{_maxValue})";
+            // 如果区间等于字段全范围，简化为 "R" 或 "H"；否则输出 "R(min-max)" 或 "H(min-max)"
+            return (_minValue == fieldMin && _maxValue == fieldMax) ? _prefix.ToString() : $"{_prefix}({_minValue}-{_maxValue})";
         }
 
         // 带步长情况
         if (_useShortStepFormat)
         {
-            // 简洁格式：R/step
-            return $"R/{_step.Value}";
+            // 简洁格式：R/step 或 H/step
+            return $"{_prefix}/{_step.Value}";
         }
         else
         {
-            // 完整格式：R(min-max)/step（无论区间是否全范围）
-            return $"R({_minValue}-{_maxValue})/{_step.Value}";
+            // 完整格式：R(min-max)/step 或 H(min-max)/step（无论区间是否全范围）
+            return $"{_prefix}({_minValue}-{_maxValue})/{_step.Value}";
         }
     }
 

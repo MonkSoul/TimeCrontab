@@ -227,7 +227,7 @@ var crontab = Crontab.YearlyAt(3, "MAY", 6);
 
 ### Supporting `R` Random Moment
 
-`R` is a special `CRON` expression character that allows you to specify a randomly generated moment. For example, `R 0 0 * * ? *` means triggering at a random second (0‑59) every day at 00:00. `R R R 15W * ? *` means triggering at a random moment (seconds, minutes, hours) on the 15th day of each month. If the 15th is a Saturday, it fires on Friday (the 14th); if it is a Sunday, it fires on Monday (the 16th). [Reference](https://help.eset.com/protect_admin/13.0/zh-CN/cron_expression.html)
+`R` is a special `CRON` expression character that allows you to specify a randomly generated moment. **You can also use `H` instead of `R`, they are completely equivalent.** For example, `R 0 0 * * ? *` means triggering at a random second (0‑59) every day at 00:00. `R R R 15W * ? *` means triggering at a random moment (seconds, minutes, hours) on the 15th day of each month. If the 15th is a Saturday, it fires on Friday (the 14th); if it is a Sunday, it fires on Monday (the 16th). [Reference](https://help.eset.com/protect_admin/13.0/zh-CN/cron_expression.html)
 
 ```cs
 // Full-range random (seconds 0-59)

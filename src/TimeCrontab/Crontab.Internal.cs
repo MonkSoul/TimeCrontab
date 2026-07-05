@@ -85,13 +85,13 @@ public sealed partial class Crontab
         /*
          * 在 Cron 表达式中，单个字段域值也支持定义多个值（我们称为值中值），如 1,2,3 或 SUN,FRI,SAT
          * 所以，这里需要将字段域值通过 , 进行切割后独立处理
-         * 但特殊地，如果字段以 R 开头且包含括号，说明是 R 的范围或离散值模式（如 R(30-59) 或 R(1,5,10)），应整体解析，不分割。
+         * 但特殊地，如果字段以 R 或 H 开头且包含括号，说明是 R 或 H 的范围或离散值模式（如 R(30-59) 或 H(1,5,10)），应整体解析，不分割。
          */
 
         try
         {
-            // 处理 R 的范围/离散值模式：以 R 开头且包含 '('，直接整体解析
-            if (field.Trim().StartsWith("R", StringComparison.OrdinalIgnoreCase) && field.Contains("("))
+            // 处理 R 或 H 的范围/离散值模式：以 R 或 H 开头且包含 '('，直接整体解析
+            if ((field.Trim().StartsWith("R", StringComparison.OrdinalIgnoreCase) || field.Trim().StartsWith("H", StringComparison.OrdinalIgnoreCase)) && field.Contains("("))
             {
                 var parser = ParseParser(field, kind);
                 return new List<ICronParser> { parser };
@@ -99,11 +99,11 @@ public sealed partial class Crontab
 
             var parsers = field.Split(',').Select(parser => ParseParser(parser, kind)).ToList();
 
-            // 禁止 R 字符与其他值在同一字段内混用（例如 R,30 或 R(10-20),30 是非法的）
+            // 禁止 R 或 H 字符与其他值在同一字段内混用（例如 R,30 或 H(10-20),30 是非法的）
             if (parsers.Any(p => p is RandomParser) && parsers.Count > 1)
             {
                 throw new TimeCrontabException(
-                    string.Format("The 'R' random parser cannot be combined with other values in the {0} field.",
+                    string.Format("The 'R' or 'H' random parser cannot be combined with other values in the {0} field.",
                     Enum.GetName(typeof(CrontabFieldKind), kind)));
             }
 
@@ -176,16 +176,17 @@ public sealed partial class Crontab
                 }
             }
 
-            // 判断值是否以 R 开头（支持全范围、区间、带步长、离散值）
-            if (newParser.StartsWith("R"))
+            // 判断值是否以 R 或 H 开头（支持全范围、区间、带步长、离散值）
+            if (newParser.StartsWith("R") || newParser.StartsWith("H"))
             {
+                var prefix = newParser[0]; // 'R' 或 'H'
                 var remaining = newParser.Substring(1);
 
-                // 纯 "R"，全范围随机
+                // 纯 "R" 或 "H"，全范围随机
                 if (string.IsNullOrEmpty(remaining))
                 {
                     // 创建 RandomParser 解析器
-                    return new RandomParser(kind);
+                    return new RandomParser(kind, prefix);
                 }
 
                 // 如果 remaining 以 '(' 开头，则包含范围或离散值
@@ -237,7 +238,7 @@ public sealed partial class Crontab
                             values.Add(val);
                         }
 
-                        return new RandomParser(kind, values);
+                        return new RandomParser(kind, values, prefix);
                     }
                     // 括号内如果包含 '-'，则为区间模式
                     else if (inside.Contains("-"))
@@ -254,14 +255,14 @@ public sealed partial class Crontab
                         }
 
                         // 创建 RandomParser 解析器
-                        return new RandomParser(kind, minValue, maxValue, step);
+                        return new RandomParser(kind, minValue, maxValue, step, false, prefix);
                     }
                     else
                     {
                         throw new TimeCrontabException(string.Format("Invalid parser '{0}'.", parser));
                     }
                 }
-                // 以 "/" 开头说明是 R/step 形式，全范围带步长
+                // 以 "/" 开头说明是 R/step 或 H/step 形式，全范围带步长
                 else if (remaining.StartsWith("/"))
                 {
                     var stepPart = remaining.Substring(1);
@@ -275,11 +276,12 @@ public sealed partial class Crontab
                         Constants.MinimumDateTimeValues[kind],
                         Constants.MaximumDateTimeValues[kind],
                         stepVal,
-                        useShortStepFormat: true);
+                        useShortStepFormat: true,
+                        prefix: prefix);
                 }
                 else
                 {
-                    // 无法识别的 R 格式，如 "Rabc"
+                    // 无法识别的 R 或 H 格式，如 "Rabc"
                     throw new TimeCrontabException(string.Format("Invalid parser '{0}'.", parser));
                 }
             }
