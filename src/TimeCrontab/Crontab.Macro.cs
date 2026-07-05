@@ -53,5 +53,5 @@ public sealed partial class Crontab
     /// <summary>
     /// 表示每周六和周日（午夜）开始的 <see cref="Crontab"/> 对象
     /// </summary>
-    public static readonly Crontab Weekends = Parse("0 0 0 * * 0,6", CronStringFormat.Default);
+    public static readonly Crontab Weekends = Parse("0 0 * * 0,6", CronStringFormat.Default);
 }
