@@ -279,6 +279,13 @@ var crontab = Crontab.Parse("* R(0,15,30,45) * * * *", CronStringFormat.WithSeco
 var crontab = Crontab.Parse("* * R(8,12,18) * * *", CronStringFormat.WithSeconds);
 ```
 
+`R` 还支持与 `#` 连用，表示每月的第 `N` 个随机星期几。例如 `R#3` 会在解析时随机选定一个星期几，然后在该月的第 `3` 个该星期几触发。`H#3` 效果相同。
+
+```cs
+// 每月第 3 个随机星期几的 00:00 触发
+var crontab = Crontab.Parse("0 0 * * R#3");
+```
+
 [更多文档](https://furion.net/docs/cron)
 
 ## 文档
@@ -632,6 +639,44 @@ public class TimeCrontabUnitTests
     {
         var crontab = Crontab.Parse("* * * * *");
         Assert.Throws<ArgumentOutOfRangeException>(() => crontab.GetPreviousOccurrences(DateTime.Now, invalidCount).ToList());
+    }
+
+    [Theory]
+    [InlineData("* * * * R#3", CronStringFormat.Default)]
+    [InlineData("* * * * H#5", CronStringFormat.Default)]
+    [InlineData("0 0 * * R#1", CronStringFormat.Default)]
+    [InlineData("0 0 * * H#2", CronStringFormat.Default)]
+    public void TestParse_RandomHash_Success(string expression, CronStringFormat format)
+    {
+        var crontab = Crontab.Parse(expression, format);
+        Assert.NotNull(crontab);
+    }
+
+    [Theory]
+    [InlineData("* * R#3 * * *", CronStringFormat.WithSeconds)]
+    [InlineData("R#3 * * * * *", CronStringFormat.WithSeconds)]
+    [InlineData("0 0 * * * H#2", CronStringFormat.WithYears)]
+    public void TestParse_RandomHash_InvalidField_Throws(string expression, CronStringFormat format)
+    {
+        Assert.Throws<TimeCrontabException>(() => Crontab.Parse(expression, format));
+    }
+
+    [Theory]
+    [InlineData("* * * * R#0", CronStringFormat.Default)]
+    [InlineData("* * * * R#6", CronStringFormat.Default)]
+    [InlineData("* * * * H#-1", CronStringFormat.Default)]
+    [InlineData("* * * * H#abc", CronStringFormat.Default)]
+    public void TestParse_RandomHash_InvalidNumber_Throws(string expression, CronStringFormat format)
+    {
+        Assert.Throws<TimeCrontabException>(() => Crontab.Parse(expression, format));
+    }
+
+    [Fact]
+    public void TestRandomHash_Occurrence_IsValid()
+    {
+        var crontab = Crontab.Parse("* * * * R#3");
+        var next = crontab.GetNextOccurrence(new DateTime(2022, 1, 1, 0, 0, 0));
+        Assert.InRange((int)next.DayOfWeek, 0, 6);
     }
 
     private static int GetRandomFieldValue(DateTime dateTime, string expression)

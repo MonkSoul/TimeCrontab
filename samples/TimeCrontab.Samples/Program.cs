@@ -62,3 +62,13 @@ foreach (var occurrence in nextOccurrences6)
 {
     Console.WriteLine(occurrence);
 }
+
+var crontab7 = Crontab.Parse("* * * * H#3", CronStringFormat.Default);
+var nextOccurrences7 = crontab7.GetNextOccurrences(now, 10).ToList();
+
+Console.WriteLine("--------------------------------------------------");
+
+foreach (var occurrence in nextOccurrences7)
+{
+    Console.WriteLine(occurrence);
+}

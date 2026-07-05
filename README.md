@@ -279,6 +279,13 @@ var crontab = Crontab.Parse("* R(0,15,30,45) * * * *", CronStringFormat.WithSeco
 var crontab = Crontab.Parse("* * R(8,12,18) * * *", CronStringFormat.WithSeconds);
 ```
 
+`R` can also be combined with `#` to indicate the Nth random day of the week in a month. For example, `R#3` randomly selects a day of the week at parse time, and then fires on the 3rd occurrence of that weekday in the month. `H#3` works the same way.
+
+```cs
+// Trigger at 00:00 on the 3rd random weekday of each month
+var crontab = Crontab.Parse("0 0 * * R#3");
+```
+
 [More Documentation](https://furion.net/docs/cron)
 
 ## Documentation
@@ -288,12 +295,6 @@ You can find the TimeCrontab documentation on the [home page](https://furion.net
 ## Tests
 
 ```cs
-using System;
-using System.Linq;
-using Xunit;
-
-namespace TimeCrontab.UnitTests;
-
 public class TimeCrontabUnitTests
 {
     private readonly ITestOutputHelper _testOutput;
@@ -638,6 +639,44 @@ public class TimeCrontabUnitTests
     {
         var crontab = Crontab.Parse("* * * * *");
         Assert.Throws<ArgumentOutOfRangeException>(() => crontab.GetPreviousOccurrences(DateTime.Now, invalidCount).ToList());
+    }
+
+    [Theory]
+    [InlineData("* * * * R#3", CronStringFormat.Default)]
+    [InlineData("* * * * H#5", CronStringFormat.Default)]
+    [InlineData("0 0 * * R#1", CronStringFormat.Default)]
+    [InlineData("0 0 * * H#2", CronStringFormat.Default)]
+    public void TestParse_RandomHash_Success(string expression, CronStringFormat format)
+    {
+        var crontab = Crontab.Parse(expression, format);
+        Assert.NotNull(crontab);
+    }
+
+    [Theory]
+    [InlineData("* * R#3 * * *", CronStringFormat.WithSeconds)]
+    [InlineData("R#3 * * * * *", CronStringFormat.WithSeconds)]
+    [InlineData("0 0 * * * H#2", CronStringFormat.WithYears)]
+    public void TestParse_RandomHash_InvalidField_Throws(string expression, CronStringFormat format)
+    {
+        Assert.Throws<TimeCrontabException>(() => Crontab.Parse(expression, format));
+    }
+
+    [Theory]
+    [InlineData("* * * * R#0", CronStringFormat.Default)]
+    [InlineData("* * * * R#6", CronStringFormat.Default)]
+    [InlineData("* * * * H#-1", CronStringFormat.Default)]
+    [InlineData("* * * * H#abc", CronStringFormat.Default)]
+    public void TestParse_RandomHash_InvalidNumber_Throws(string expression, CronStringFormat format)
+    {
+        Assert.Throws<TimeCrontabException>(() => Crontab.Parse(expression, format));
+    }
+
+    [Fact]
+    public void TestRandomHash_Occurrence_IsValid()
+    {
+        var crontab = Crontab.Parse("* * * * R#3");
+        var next = crontab.GetNextOccurrence(new DateTime(2022, 1, 1, 0, 0, 0));
+        Assert.InRange((int)next.DayOfWeek, 0, 6);
     }
 
     private static int GetRandomFieldValue(DateTime dateTime, string expression)

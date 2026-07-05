@@ -176,7 +176,7 @@ public sealed partial class Crontab
                 }
             }
 
-            // 判断值是否以 R 或 H 开头（支持全范围、区间、带步长、离散值）
+            // 判断值是否以 R 或 H 开头（支持全范围、区间、带步长、离散值、第 N 个随机星期）
             if (newParser.StartsWith("R") || newParser.StartsWith("H"))
             {
                 var prefix = newParser[0]; // 'R' 或 'H'
@@ -189,6 +189,25 @@ public sealed partial class Crontab
                     return new RandomParser(kind, prefix);
                 }
 
+                // R#N 或 H#N 语法，仅 DayOfWeek 字段有效
+                if (remaining.StartsWith("#"))
+                {
+                    if (kind != CrontabFieldKind.DayOfWeek)
+                    {
+                        throw new TimeCrontabException("The 'R#' or 'H#' parser can only be used in the Day of Week field.");
+                    }
+
+                    var weekNumberPart = remaining.Substring(1);
+                    if (!int.TryParse(weekNumberPart, out var weekNumber) || weekNumber < 1 || weekNumber > 5)
+                    {
+                        throw new TimeCrontabException(string.Format("Invalid parser '{0}'.", parser));
+                    }
+
+                    // 随机选定一个星期几（0-7，0=周日，7=周六）
+                    var dayOfWeek = GetRandomDayOfWeek();
+                    return new SpecificDayOfWeekInMonthParser(dayOfWeek, weekNumber, kind);
+                }
+
                 // 如果 remaining 以 '(' 开头，则包含范围或离散值
                 if (remaining.StartsWith("("))
                 {
@@ -198,8 +217,8 @@ public sealed partial class Crontab
                         throw new TimeCrontabException(string.Format("Invalid parser '{0}'.", parser));
                     }
 
-                    var inside = remaining.Substring(1, closingIndex - 1); // 括号内的内容
-                    var after = remaining.Substring(closingIndex + 1);     // 括号后的部分，如 /step
+                    var inside = remaining.Substring(1, closingIndex - 1);  // 括号内的内容
+                    var after = remaining.Substring(closingIndex + 1);  // 括号后的部分，如 /step
 
                     int? step = null;
 
@@ -387,6 +406,16 @@ public sealed partial class Crontab
         {
             throw new TimeCrontabException(string.Format("Invalid parser '{0}'. See inner exception for details.", parser), ex);
         }
+    }
+
+    /// <summary>
+    /// 生成一个随机的星期几（0-6，0=周日，6=周六）
+    /// </summary>
+    /// <returns><see cref="int"/></returns>
+    private static int GetRandomDayOfWeek()
+    {
+        var random = new Random(Guid.NewGuid().GetHashCode());
+        return random.Next(0, 7); // 0 到 6 闭区间
     }
 
     /// <summary>
