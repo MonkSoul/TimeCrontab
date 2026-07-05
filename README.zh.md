@@ -160,7 +160,8 @@ var daily = Crontab.Parse("@daily");  // 每天 00:00:00
 var monthly = Crontab.Parse("@monthly");  // 每月 1 号 00:00:00
 var weekly = Crontab.Parse("@weekly");    // 每周日 00：00：00
 var yearly = Crontab.Parse("@yearly");    // 每年 1 月 1 号 00:00:00
-var workday = Crontab.Parse("@workday");    // 每周一至周五 00:00:00
+var weekdays = Crontab.Parse("@weekdays");    // 每周一至周五 00:00:00
+var weekends = Crontab.Parse("@weekends");    // 每周六和周日 00:00:00
 
 // 通过静态属性直接获取
 var secondly = Crontab.Secondly;    // 每秒
@@ -170,7 +171,8 @@ var daily = Crontab.Daily;  // 每天 00:00:00
 var monthly = Crontab.Monthly;  // 每月 1 号 00:00:00
 var weekly = Crontab.Weekly;    // 每周日 00：00：00
 var yearly = Crontab.Yearly;    // 每年 1 月 1 号 00:00:00
-var workday = Crontab.Workday;    // 每周一至周五 00:00:00
+var weekdays = Crontab.Weekdays;    // 每周一至周五 00:00:00
+var weekends = Crontab.Weekends;    // 每周六和周日 00:00:00
 ```
 
 ### Macro At 标识符

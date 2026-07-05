@@ -160,7 +160,8 @@ var daily = Crontab.Parse("@daily");  // Every day at 00:00:00
 var monthly = Crontab.Parse("@monthly");  // Every 1st day of month at 00:00:00
 var weekly = Crontab.Parse("@weekly");    // Every Sunday at 00:00:00
 var yearly = Crontab.Parse("@yearly");    // Every 1st day of year at 00:00:00
-var workday = Crontab.Parse("@workday");    // Every Monday to Friday at 00:00:00
+var weekdays = Crontab.Parse("@weekdays");    // Every Monday to Friday at 00:00:00
+var weekends = Crontab.Parse("@weekends");    // Every Saturday and Sunday at 00:00:00
 
 // Static properties
 var secondly = Crontab.Secondly;    // Every second
@@ -170,7 +171,8 @@ var daily = Crontab.Daily;  // Every day at 00:00:00
 var monthly = Crontab.Monthly;  // Every 1st day of month at 00:00:00
 var weekly = Crontab.Weekly;    // Every Sunday at 00:00:00
 var yearly = Crontab.Yearly;    // Every 1st day of year at 00:00:00
-var workday = Crontab.Workday;    // Every Monday to Friday at 00:00:00
+var weekdays = Crontab.Weekdays;    // Every Monday to Friday at 00:00:00
+var weekends = Crontab.Weekends;    // Every Saturday and Sunday at 00:00:00
 ```
 
 ### Macro At Identifiers

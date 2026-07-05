@@ -46,7 +46,7 @@ public sealed partial class Crontab
         // 处理 Macro 表达式
         if (expression.StartsWith("@"))
         {
-            return expression switch
+            return expression.ToLowerInvariant() switch
             {
                 "@secondly" => Secondly,
                 "@minutely" => Minutely,
@@ -55,7 +55,8 @@ public sealed partial class Crontab
                 "@monthly" => Monthly,
                 "@weekly" => Weekly,
                 "@yearly" => Yearly,
-                "@workday" => Workday,
+                "@weekdays" => Weekdays,
+                "@weekends" => Weekends,
                 _ => throw new NotImplementedException(),
             };
         }
@@ -79,7 +80,7 @@ public sealed partial class Crontab
         // 空检查
         if (string.IsNullOrEmpty(macro)) throw new ArgumentNullException(nameof(macro));
 
-        return macro switch
+        return macro.ToLowerInvariant() switch
         {
             "@secondly" => SecondlyAt(fields),
             "@minutely" => MinutelyAt(fields),
