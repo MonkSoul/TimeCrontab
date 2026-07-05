@@ -85,13 +85,13 @@ public sealed partial class Crontab
         /*
          * 在 Cron 表达式中，单个字段域值也支持定义多个值（我们称为值中值），如 1,2,3 或 SUN,FRI,SAT
          * 所以，这里需要将字段域值通过 , 进行切割后独立处理
-         * 但特殊地，如果字段以 R 开头且包含逗号，说明是 R 的离散值模式（如 R1,5,10），应整体解析，不分割。
+         * 但特殊地，如果字段以 R 开头且包含括号，说明是 R 的范围或离散值模式（如 R(30-59) 或 R(1,5,10)），应整体解析，不分割。
          */
 
         try
         {
-            // 处理离散值模式：以 R 开头且包含逗号，直接整体解析
-            if (field.Trim().StartsWith("R", StringComparison.OrdinalIgnoreCase) && field.Contains(","))
+            // 处理 R 的范围/离散值模式：以 R 开头且包含 '('，直接整体解析
+            if (field.Trim().StartsWith("R", StringComparison.OrdinalIgnoreCase) && field.Contains("("))
             {
                 var parser = ParseParser(field, kind);
                 return new List<ICronParser> { parser };
@@ -99,7 +99,7 @@ public sealed partial class Crontab
 
             var parsers = field.Split(',').Select(parser => ParseParser(parser, kind)).ToList();
 
-            // 禁止 R 字符与其他值在同一字段内混用（例如 R,30 或 R10-20,30 是非法的）
+            // 禁止 R 字符与其他值在同一字段内混用（例如 R,30 或 R(10-20),30 是非法的）
             if (parsers.Any(p => p is RandomParser) && parsers.Count > 1)
             {
                 throw new TimeCrontabException(
@@ -188,46 +188,24 @@ public sealed partial class Crontab
                     return new RandomParser(kind);
                 }
 
-                // 含有逗号，例如 R1,5,10
-                if (remaining.Contains(","))
+                // 如果 remaining 以 '(' 开头，则包含范围或离散值
+                if (remaining.StartsWith("("))
                 {
-                    // 尝试使用逗号分割剩余部分
-                    var parts = remaining.Split(',');
-                    var values = new List<int>();
-
-                    foreach (var part in parts)
+                    var closingIndex = remaining.IndexOf(')');
+                    if (closingIndex == -1)
                     {
-                        // 尝试将每个部分解析为整数值
-                        if (!int.TryParse(part, out var val))
-                        {
-                            throw new TimeCrontabException(string.Format("Invalid parser '{0}'.", parser));
-                        }
-
-                        values.Add(val);
+                        throw new TimeCrontabException(string.Format("Invalid parser '{0}'.", parser));
                     }
 
-                    return new RandomParser(kind, values);
-                }
+                    var inside = remaining.Substring(1, closingIndex - 1); // 括号内的内容
+                    var after = remaining.Substring(closingIndex + 1);     // 括号后的部分，如 /step
 
-                int? step = null;
+                    int? step = null;
 
-                // 包含 "-" 说明是区间形式 Rmin-max 或 Rmin-max/step
-                if (remaining.Contains("-"))
-                {
-                    // 找到 "-" 的位置，分割出 min 和 后续部分（max 可能含有 /step）
-                    var dashIndex = remaining.IndexOf('-');
-                    var minPart = remaining.Substring(0, dashIndex);
-                    var afterMinus = remaining.Substring(dashIndex + 1);
-
-                    string maxPart;
-
-                    // 检查后续部分是否包含 "/"
-                    if (afterMinus.Contains("/"))
+                    // 处理括号后的步长部分
+                    if (after.StartsWith("/"))
                     {
-                        // Rmin-max/step，需要分别提取 max 和 step
-                        var slashIndex = afterMinus.IndexOf('/');
-                        maxPart = afterMinus.Substring(0, slashIndex);
-                        var stepPart = afterMinus.Substring(slashIndex + 1);
+                        var stepPart = after.Substring(1);
 
                         // 步长必须是有效整数
                         if (!int.TryParse(stepPart, out var stepVal))
@@ -237,20 +215,51 @@ public sealed partial class Crontab
 
                         step = stepVal;
                     }
-                    else
-                    {
-                        // Rmin-max，无步长
-                        maxPart = afterMinus;
-                    }
-
-                    // 解析 min 和 max，必须都是整数
-                    if (!int.TryParse(minPart, out var minValue) || !int.TryParse(maxPart, out var maxValue))
+                    else if (after != string.Empty)
                     {
                         throw new TimeCrontabException(string.Format("Invalid parser '{0}'.", parser));
                     }
 
-                    // 创建 RandomParser 解析器
-                    return new RandomParser(kind, minValue, maxValue, step);
+                    // 括号内如果包含逗号，则为离散值模式
+                    if (inside.Contains(","))
+                    {
+                        // 尝试使用逗号分割剩余部分
+                        var parts = inside.Split(',');
+                        var values = new List<int>();
+
+                        foreach (var part in parts)
+                        {
+                            // 尝试将每个部分解析为整数值
+                            if (!int.TryParse(part, out var val))
+                            {
+                                throw new TimeCrontabException(string.Format("Invalid parser '{0}'.", parser));
+                            }
+                            values.Add(val);
+                        }
+
+                        return new RandomParser(kind, values);
+                    }
+                    // 括号内如果包含 '-'，则为区间模式
+                    else if (inside.Contains("-"))
+                    {
+                        // 找到 "-" 的位置，分割出 min 和 后续部分（max 可能含有 /step）
+                        var dashIndex = inside.IndexOf('-');
+                        var minPart = inside.Substring(0, dashIndex);
+                        var maxPart = inside.Substring(dashIndex + 1);
+
+                        // 解析 min 和 max，必须都是整数
+                        if (!int.TryParse(minPart, out var minValue) || !int.TryParse(maxPart, out var maxValue))
+                        {
+                            throw new TimeCrontabException(string.Format("Invalid parser '{0}'.", parser));
+                        }
+
+                        // 创建 RandomParser 解析器
+                        return new RandomParser(kind, minValue, maxValue, step);
+                    }
+                    else
+                    {
+                        throw new TimeCrontabException(string.Format("Invalid parser '{0}'.", parser));
+                    }
                 }
                 // 以 "/" 开头说明是 R/step 形式，全范围带步长
                 else if (remaining.StartsWith("/"))
@@ -265,7 +274,8 @@ public sealed partial class Crontab
                     return new RandomParser(kind,
                         Constants.MinimumDateTimeValues[kind],
                         Constants.MaximumDateTimeValues[kind],
-                        stepVal);
+                        stepVal,
+                        useShortStepFormat: true);
                 }
                 else
                 {
